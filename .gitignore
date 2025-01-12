@@ -18,6 +18,7 @@ vcpkg/
 
 *.vcxproj
 *.vcxproj.filters
+*.vcxproj.user
 
 # Ignore compiled files
 *.exe
@@ -40,4 +41,6 @@ Desktop.ini
 
 x64/
 
-*/pch.*
+**/pch.*
+
+**/*.pch
