@@ -1,19 +1,39 @@
-# User-specific files
-*.user
-*.userosscache
-*.suo
-*.userprefs
-
-# Build results
+# Ignore build output directories
 bin/
 obj/
+Debug/
+Release/
+
+# Ignore Visual Studio files
+.vs/
+.vscode/
+
+# Ignore user-specific files
+*.user
+*.suo
+
+# Ignore external dependencies
+packages/
+vcpkg/
+
+# Ignore compiled files
+*.exe
+*.dll
+*.pdb
+*.obj
+*.lib
+
+# Ignore IDE-specific files
+*.aps
+*.ncb
+*.log
+Thumbs.db
+Desktop.ini
 
 # Windows Installer files
 *.cab
 *.msi
 *.msm
-
-.vs
 
 x64/
 

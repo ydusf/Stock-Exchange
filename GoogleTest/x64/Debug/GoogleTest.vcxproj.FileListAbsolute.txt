@@ -1,1 +1,0 @@
-C:\Users\SEB\Desktop\projects\StockExchange\GoogleTest\x64\Debug\GoogleTest.vcxproj.CopyComplete

@@ -1,3 +1,0 @@
-﻿  Account.cpp
-x64\Debug\Account.obj : warning LNK4042: object specified more than once; extras ignored
-  Core.vcxproj -> C:\Users\SEB\Desktop\projects\StockExchange\x64\Debug\Core.lib
