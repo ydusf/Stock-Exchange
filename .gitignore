@@ -16,6 +16,9 @@ Release/
 packages/
 vcpkg/
 
+*.vcxproj
+*.vcxproj.filters
+
 # Ignore compiled files
 *.exe
 *.dll
@@ -37,3 +40,4 @@ Desktop.ini
 
 x64/
 
+*/pch.*
