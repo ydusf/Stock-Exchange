@@ -108,7 +108,7 @@ static void PrintOrderPrice(double price)
 {
     std::cout << price;
 };
-
+ 
 static void PrintNewLine()
 {
     std::cout << '\n';
