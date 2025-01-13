@@ -3,7 +3,7 @@
 #include <cassert>
 
 Account::Account(double initialCashBalance, double initialAssetBalance)
-    : m_cashBalance(initialCashBalance), m_assetBalance(initialAssetBalance)
+    : m_cashBalance(initialCashBalance), m_assetBalance(initialAssetBalance), m_reservedCash(0)
 {
 
 }
@@ -33,6 +33,16 @@ void Account::SetAssetBalance(double newAssetBalance)
 {
     assert(newAssetBalance >= 0);
     m_assetBalance = newAssetBalance;
+}
+
+void Account::UpdateReservedCash(double reservedCashDelta)
+{
+    m_reservedCash -= reservedCashDelta;
+}
+
+bool Account::CanPlaceOrder(double amount)
+{
+    return (m_cashBalance - m_reservedCash) >= amount;
 }
 
 void Account::AddOrder(std::size_t orderId)

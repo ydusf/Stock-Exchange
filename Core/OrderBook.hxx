@@ -13,8 +13,8 @@
 
 enum class Side
 {
-    BUY,
-    SELL
+    Buy,
+    Sell
 };
 
 enum class Status

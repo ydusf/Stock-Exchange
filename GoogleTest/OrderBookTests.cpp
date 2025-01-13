@@ -54,7 +54,7 @@ TEST_F(OrderBookTestFixture, AddOrder)
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 2000, 2000);
 
-    Side side = Side::SELL;
+    Side side = Side::Sell;
     double quantity = 30;
     double price = 20;
     m_systemMediator->SendOrderRequest(0, "AAPL", side, quantity, price);
@@ -77,9 +77,9 @@ TEST_F(OrderBookTestFixture, SellOrderFilled)
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 2000, 2000);
 
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::SELL, 30, 20);
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::SELL, 20, 18);
-    m_systemMediator->SendOrderRequest(1, "AAPL", Side::BUY, 25, 20);
+    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
+    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
+    m_systemMediator->SendOrderRequest(1, "AAPL", Side::Buy, 25, 20);
 
     OrderBook* orderBook = GetOrderBook("AAPL");
     ASSERT_NE(orderBook, nullptr);
@@ -102,9 +102,9 @@ TEST_F(OrderBookTestFixture, BuyOrderFilled)
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 2000, 2000);
 
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::SELL, 30, 20);
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::SELL, 20, 18);
-    m_systemMediator->SendOrderRequest(1, "AAPL", Side::BUY, 15, 20);
+    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
+    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
+    m_systemMediator->SendOrderRequest(1, "AAPL", Side::Buy, 15, 20);
 
     OrderBook* orderBook = GetOrderBook("AAPL");
     ASSERT_NE(orderBook, nullptr);
@@ -129,9 +129,9 @@ TEST_F(OrderBookTestFixture, BothOrdersFilled)
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 2000, 2000);
 
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::SELL, 30, 20);
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::SELL, 20, 18);
-    m_systemMediator->SendOrderRequest(1, "AAPL", Side::BUY, 20, 19);
+    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
+    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
+    m_systemMediator->SendOrderRequest(1, "AAPL", Side::Buy, 20, 19);
 
     OrderBook* orderBook = GetOrderBook("AAPL");
     ASSERT_NE(orderBook, nullptr);
@@ -155,7 +155,7 @@ TEST_F(OrderBookTestFixture, OrderBookComplexMatching)
     accountManager->AddAccount(1, 2000, 2000);
 
     std::vector<std::size_t> tradingEntities{ 0, 1, 1, 1, 1, 0, 0, 0, 1, 1 };
-    std::vector<Side> sides{ Side::BUY, Side::BUY, Side::SELL, Side::SELL, Side::BUY, Side::BUY, Side::BUY, Side::BUY, Side::BUY, Side::SELL };
+    std::vector<Side> sides{ Side::Buy, Side::Buy, Side::Sell, Side::Sell, Side::Buy, Side::Buy, Side::Buy, Side::Buy, Side::Buy, Side::Sell };
     std::vector<double> quantities{ 20, 14, 17, 30, 35, 200, 34, 12, 25, 16 };
     std::vector<double> prices{ 10, 12, 11.5, 13.2, 11.3, 14.2, 10.6, 10.76, 10.98, 15 };
 
@@ -189,9 +189,9 @@ TEST_F(OrderBookTestFixture, OrderModified)
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 2000, 2000);
 
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::SELL, 30, 20);
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::SELL, 20, 18);
-    m_systemMediator->SendOrderRequest(1, "AAPL", Side::BUY, 20, 16);
+    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
+    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
+    m_systemMediator->SendOrderRequest(1, "AAPL", Side::Buy, 20, 16);
 
     OrderBook* orderBook = GetOrderBook("AAPL");
     ASSERT_NE(orderBook, nullptr);
@@ -218,9 +218,9 @@ TEST_F(OrderBookTestFixture, OrderCancelled)
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 2000, 2000);
 
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::SELL, 30, 20);
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::SELL, 20, 18);
-    m_systemMediator->SendOrderRequest(1, "AAPL", Side::BUY, 20, 16);
+    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
+    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
+    m_systemMediator->SendOrderRequest(1, "AAPL", Side::Buy, 20, 16);
 
     OrderBook* orderBook = GetOrderBook("AAPL");
     ASSERT_NE(orderBook, nullptr);

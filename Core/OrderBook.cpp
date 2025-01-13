@@ -24,7 +24,7 @@ std::unordered_map<std::size_t, std::shared_ptr<Order>> OrderBook::GetOrders() c
 void OrderBook::AddOrder(std::size_t ownerId, std::string ticker, Side side, double quantity, double price)
 {
     std::shared_ptr<Order> order = std::make_shared<Order>(ticker, side, quantity, price, m_currOrderId, ownerId);
-    side == Side::BUY ? m_bids.push(order) : m_asks.push(order);
+    side == Side::Buy ? m_bids.push(order) : m_asks.push(order);
     m_orders.insert({ m_currOrderId, order });
 
     m_addOrderCallback(order);
@@ -141,6 +141,6 @@ void OrderBook::ResetQueue()
 
     for (auto& [id, order] : m_orders)
     {
-        order->m_side == Side::BUY ? m_bids.push(order) : m_asks.push(order);
+        order->m_side == Side::Buy ? m_bids.push(order) : m_asks.push(order);
     }
 }

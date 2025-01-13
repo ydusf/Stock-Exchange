@@ -12,6 +12,7 @@ private:
 private:
     double m_cashBalance;
     double m_assetBalance;
+    double m_reservedCash;
 
 public:
     Account(double initialCashBalance, double initialAssetBalance);
@@ -21,7 +22,9 @@ public:
 
     void SetCashBalance(double newCashBalance);
     void SetAssetBalance(double newAssetBalance);
+    void UpdateReservedCash(double reservedCashDelta);
 
+    bool CanPlaceOrder(double amount);
     void AddOrder(std::size_t orderId);
     void RemoveOrder(std::size_t orderId);
 

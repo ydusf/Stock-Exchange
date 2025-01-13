@@ -33,24 +33,8 @@ bool SystemMediator::SendOrderRequest(std::size_t ownerId, std::string ticker, S
     if (!account)
         return false;
 
-    double tradeValue = quantity * price;
-
-    if (side == Side::BUY)
-    {
-        if (tradeValue > (*account)->GetCashBalance())
-            return false;
-
-        (*account)->SetCashBalance((*account)->GetCashBalance() - tradeValue);
-        (*account)->SetAssetBalance((*account)->GetAssetBalance() + tradeValue);
-    }
-    else
-    {
-        if (tradeValue > (*account)->GetAssetBalance())
-            return false;
-
-        (*account)->SetCashBalance((*account)->GetCashBalance() + tradeValue);
-        (*account)->SetAssetBalance((*account)->GetAssetBalance() - tradeValue);
-    }
+    if (!(*account)->CanPlaceOrder(quantity * price))
+        return false;
 
     OrderBook* orderBook = GetOrderBook(ticker);
 
@@ -102,8 +86,6 @@ void SystemMediator::on_order_match(const std::shared_ptr<Order>& bid, const std
     if (!buyer || !seller)
         return;
 
-    std::cout << "Trade occured between: " << bid->m_ownerId << " and " << ask->m_ownerId << " with trade value of: " << tradeValue << '\n';
-
     if (bid->m_status == Status::Filled)
     {
         (*buyer)->RemoveOrder(bid->m_orderId);
@@ -114,6 +96,8 @@ void SystemMediator::on_order_match(const std::shared_ptr<Order>& bid, const std
     }
 
     m_accountManager->UpdateBalances(bid->m_ownerId, tradeValue);
+    (*buyer)->UpdateReservedCash(tradeValue); // only update for buy orders -> sell orders never reserved anything
+
     m_accountManager->UpdateBalances(ask->m_ownerId, -tradeValue);
 }
 
@@ -128,5 +112,8 @@ void SystemMediator::on_add_order(const std::shared_ptr<Order>& order)
 
     double tradeValue = order->m_price * order->m_quantity;
 
-    m_accountManager->UpdateBalances(order->m_ownerId, order->m_side == Side::BUY ? tradeValue : -tradeValue);
+    if (order->m_side == Side::Buy)
+    {
+        (*owner)->UpdateReservedCash(-tradeValue);
+    }
 }

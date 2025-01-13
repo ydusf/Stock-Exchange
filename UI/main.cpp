@@ -28,7 +28,7 @@ static void TimingDiagnostics()
 
     for (std::size_t i = 0; i < OPERATIONS; ++i)
     {
-        Side side = sideDist(gen) > 0.5 ? Side::BUY : Side::SELL;
+        Side side = sideDist(gen) > 0.5 ? Side::Buy : Side::Sell;
         sides.push_back(side);
 
         double quantity = quantityDist(gen);
@@ -41,8 +41,8 @@ static void TimingDiagnostics()
     SystemMediator systemMediator(std::make_unique<AccountManager>());
     AccountManager* accountManager = systemMediator.GetAccountManager();
 
-    accountManager->AddAccount(0, 10000, 10000);
-    accountManager->AddAccount(1, 10000, 10000);
+    accountManager->AddAccount(0, 1000000, 1000000);
+    accountManager->AddAccount(1, 1000000, 1000000);
 
     auto startTotal = std::chrono::high_resolution_clock::now();
 
@@ -68,11 +68,11 @@ static void TimingDiagnostics()
     std::sort(latencies.begin(), latencies.end());
 
     // Calculate percentiles
-    auto p50 = latencies[OPERATIONS * 0.50];
-    auto p90 = latencies[OPERATIONS * 0.90];
-    auto p95 = latencies[OPERATIONS * 0.95];
-    auto p99 = latencies[OPERATIONS * 0.99];
-    auto maxLatency = latencies.back();
+    auto& p50 = latencies[OPERATIONS * 0.50];
+    auto& p90 = latencies[OPERATIONS * 0.90];
+    auto& p95 = latencies[OPERATIONS * 0.95];
+    auto& p99 = latencies[OPERATIONS * 0.99];
+    auto& maxLatency = latencies.back();
 
     // Calculate mean latency
     std::chrono::nanoseconds totalLatency(0);
@@ -99,7 +99,7 @@ static void TimingDiagnostics()
 
 static void PrintOrderQuantity(Side Side, double quantity)
 {
-    std::string colourCode = Side == Side::SELL ? "\033[31m" : "\033[32m";
+    std::string colourCode = Side == Side::Sell ? "\033[31m" : "\033[32m";
 
     std::cout << colourCode + std::string(quantity, '#') + "\033[0m";
 };
@@ -135,7 +135,7 @@ static void LaunchApplication()
 
     for (std::size_t i = 0; i < OPERATIONS; ++i)
     {
-        Side Side = SideDist(gen) > 0.5 ? Side::BUY : Side::SELL;
+        Side Side = SideDist(gen) > 0.5 ? Side::Buy : Side::Sell;
         sides.push_back(Side);
 
         double quantity = quantityDist(gen);
@@ -181,8 +181,8 @@ static void LaunchApplication()
 
 int main()
 {
-    //TimingDiagnostics();
-    LaunchApplication();
+    TimingDiagnostics();
+    //LaunchApplication();
 
     return 0;
 }
