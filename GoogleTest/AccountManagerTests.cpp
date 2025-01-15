@@ -11,22 +11,20 @@
 class AccountManagerTestFixture : public ::testing::Test
 {
 protected:
-    std::unique_ptr<SystemMediator> m_systemMediator;
-
+    SystemMediator m_systemMediator;
 
     AccountManagerTestFixture()
     {
-        m_systemMediator = std::make_unique<SystemMediator>(std::make_unique<AccountManager>());
     }
 
     AccountManager* GetAccountManager()
     {
-        return m_systemMediator->GetAccountManager();
+        return m_systemMediator.GetAccountManager();
     }
 
-    OrderBook* GetOrderBook(std::string ticker)
+    std::optional<OrderBook*> GetOrderBook(std::string ticker)
     {
-        return m_systemMediator->GetOrderBook(ticker);
+        return m_systemMediator.GetOrderBook(ticker);
     }
 
     ~AccountManagerTestFixture()
@@ -38,46 +36,49 @@ protected:
 TEST_F(AccountManagerTestFixture, AddAccount)
 {
     AccountManager* accountManager = GetAccountManager();
-    ASSERT_NE(accountManager, nullptr);
 
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 1000, 2500);
     accountManager->AddAccount(1, 1000, 2500);
 
-    std::unordered_map<std::size_t, std::shared_ptr<Account>> accounts = accountManager->GetAccounts();
-    EXPECT_EQ(accounts.size(), 2);
+    Account* account0 = accountManager->GetAccount(0);
+    ASSERT_NE(account0, nullptr);
 
-    EXPECT_NE(accounts.find(0), accounts.end());
-    EXPECT_EQ(accounts.at(0)->GetCashBalance(), 2000);
-    EXPECT_EQ(accounts.at(0)->GetAssetBalance(), 2000);
+    Account* account1 = accountManager->GetAccount(1);
+    ASSERT_NE(account1, nullptr);
 
-    EXPECT_NE(accounts.find(1), accounts.end());
-    EXPECT_EQ(accounts.at(1)->GetCashBalance(), 1000);
-    EXPECT_EQ(accounts.at(1)->GetAssetBalance(), 2500);
+    EXPECT_EQ(account0->GetCashBalance(), 2000);
+    EXPECT_EQ(account0->GetAssetBalance(), 2000);
 
-    EXPECT_EQ(accounts.find(2), accounts.end());
+    EXPECT_EQ(account1->GetCashBalance(), 1000);
+    EXPECT_EQ(account1->GetAssetBalance(), 2500);
+
+    Account* account2 = accountManager->GetAccount(2);
+    EXPECT_EQ(account2, nullptr);
 }
 
-TEST_F(AccountManagerTestFixture, UpdateBalances)
+TEST_F(AccountManagerTestFixture, UpdateBalancesAfterOrder)
 {
     AccountManager* accountManager = GetAccountManager();
-    ASSERT_NE(accountManager, nullptr);
 
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 1000, 2500);
 
-    std::unordered_map<std::size_t, std::shared_ptr<Account>> accounts = accountManager->GetAccounts();
-    ASSERT_EQ(accounts.size(), 2);
-    ASSERT_NE(accounts.find(0), accounts.end());
-    ASSERT_NE(accounts.find(1), accounts.end());
+    Account* account0 = accountManager->GetAccount(0);
+    ASSERT_NE(account0, nullptr);
+
+    Account* account1 = accountManager->GetAccount(1);
+    ASSERT_NE(account1, nullptr);
 
     // Buy order with trade value: 1200, from account with id: 0
-    accountManager->UpdateBalances(0, 1200);
-    EXPECT_EQ(accounts.at(0)->GetCashBalance(), 800);
-    EXPECT_EQ(accounts.at(0)->GetAssetBalance(), 3200);
+    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Buy, 12, 100);
+    EXPECT_EQ(account0->GetReservedBalance(), 1200);
+    EXPECT_EQ(account0->GetCashBalance(), 2000);
+    EXPECT_EQ(account0->GetAssetBalance(), 2000);
 
-    // Buy order with trade value: 1800, from account with id: 1
-    accountManager->UpdateBalances(1, -1800);
-    EXPECT_EQ(accounts.at(1)->GetCashBalance(), 2800);
-    EXPECT_EQ(accounts.at(1)->GetAssetBalance(), 700);
+    // Sell order with trade value: 1800, from account with id: 1
+    m_systemMediator.SendOrderRequest(1, "AAPL", Side::Sell, 18, 100);
+    EXPECT_EQ(account1->GetReservedBalance(), 0);
+    EXPECT_EQ(account1->GetCashBalance(), 2200);
+    EXPECT_EQ(account1->GetAssetBalance(), 1300);
 }

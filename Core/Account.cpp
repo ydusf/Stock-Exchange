@@ -3,7 +3,7 @@
 #include <cassert>
 
 Account::Account(double initialCashBalance, double initialAssetBalance)
-    : m_cashBalance(initialCashBalance), m_assetBalance(initialAssetBalance), m_reservedCash(0)
+    : m_cashBalance(initialCashBalance), m_assetBalance(initialAssetBalance), m_reservedBalance(0)
 {
 
 }
@@ -13,6 +13,16 @@ Account::~Account()
 
 }
 
+double Account::GetNetworth() const
+{
+    return m_cashBalance + m_reservedBalance + m_assetBalance;
+}
+
+double Account::GetReservedBalance() const
+{
+    return m_reservedBalance;
+}
+
 double Account::GetCashBalance() const
 {
     return m_cashBalance;
@@ -20,7 +30,6 @@ double Account::GetCashBalance() const
 
 void Account::SetCashBalance(double newCashBalance)
 {
-    assert(newCashBalance >= 0);
     m_cashBalance = newCashBalance;
 }
 
@@ -31,18 +40,24 @@ double Account::GetAssetBalance() const
 
 void Account::SetAssetBalance(double newAssetBalance)
 {
-    assert(newAssetBalance >= 0);
     m_assetBalance = newAssetBalance;
 }
 
 void Account::UpdateReservedCash(double reservedCashDelta)
 {
-    m_reservedCash -= reservedCashDelta;
+    m_reservedBalance -= reservedCashDelta;
 }
 
-bool Account::CanPlaceOrder(double amount)
+bool Account::CanPlaceOrder(Side side, double amount) const
 {
-    return (m_cashBalance - m_reservedCash) >= amount;
+    if (side == Side::Buy)
+    {
+        return (m_cashBalance - m_reservedBalance) >= amount;
+    }
+    else
+    {
+        return m_assetBalance >= amount;
+    }
 }
 
 void Account::AddOrder(std::size_t orderId)

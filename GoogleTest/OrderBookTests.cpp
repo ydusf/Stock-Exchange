@@ -9,21 +9,21 @@
 class OrderBookTestFixture : public testing::Test
 {
 protected:
-    std::unique_ptr<SystemMediator> m_systemMediator;
+    SystemMediator m_systemMediator;
 
     OrderBookTestFixture()
     {
-        m_systemMediator = std::make_unique<SystemMediator>(std::make_unique<AccountManager>());
+        
     }
 
     AccountManager* GetAccountManager()
     {
-        return m_systemMediator->GetAccountManager();
+        return m_systemMediator.GetAccountManager();
     }
 
     OrderBook* GetOrderBook(std::string ticker)
     {
-        return m_systemMediator->GetOrderBook(ticker);
+        return m_systemMediator.GetOrderBook(ticker);
     }
 
     ~OrderBookTestFixture()
@@ -32,14 +32,14 @@ protected:
     }
 };
 
-static std::vector<std::shared_ptr<Order>> GetOrders(OrderBook& orderBook)
+static std::vector<Order> GetOrders(OrderBook& orderBook)
 {
-    std::unordered_map<std::size_t, std::shared_ptr<Order>> orderMap = orderBook.GetOrders();
+    std::unordered_map<std::size_t, Order> orderMap = orderBook.GetOrders();
 
-    std::vector<std::shared_ptr<Order>> orders;
+    std::vector<Order> orders;
     orders.reserve(orderMap.size());
 
-    for (auto [id, order] : orderMap) 
+    for (auto& [id, order] : orderMap) 
     {
         orders.push_back(order);
     }
@@ -57,17 +57,17 @@ TEST_F(OrderBookTestFixture, AddOrder)
     Side side = Side::Sell;
     double quantity = 30;
     double price = 20;
-    m_systemMediator->SendOrderRequest(0, "AAPL", side, quantity, price);
+    m_systemMediator.SendOrderRequest(0, "AAPL", side, quantity, price);
 
     OrderBook* orderBook = GetOrderBook("AAPL");
     ASSERT_NE(orderBook, nullptr);
 
-    std::vector<std::shared_ptr<Order>> orders = GetOrders(*orderBook);
+    std::vector<Order> orders = GetOrders(*orderBook);
     ASSERT_EQ(orders.size(), 1);
 
-    EXPECT_EQ(orders[0]->m_side, side);
-    EXPECT_EQ(orders[0]->m_quantity, quantity);
-    EXPECT_EQ(orders[0]->m_price, price);
+    EXPECT_EQ(orders.at(0).m_side, side);
+    EXPECT_EQ(orders.at(0).m_quantity, quantity);
+    EXPECT_EQ(orders.at(0).m_price, price);
 }
 
 TEST_F(OrderBookTestFixture, SellOrderFilled)
@@ -77,22 +77,22 @@ TEST_F(OrderBookTestFixture, SellOrderFilled)
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 2000, 2000);
 
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
-    m_systemMediator->SendOrderRequest(1, "AAPL", Side::Buy, 25, 20);
+    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
+    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
+    m_systemMediator.SendOrderRequest(1, "AAPL", Side::Buy, 25, 20);
 
     OrderBook* orderBook = GetOrderBook("AAPL");
     ASSERT_NE(orderBook, nullptr);
 
-    std::unordered_map<std::size_t, std::shared_ptr<Order>> orders = orderBook->GetOrders();
+    std::unordered_map<std::size_t, Order> orders = orderBook->GetOrders();
 
     ASSERT_EQ(orders.size(), 1);
     ASSERT_NE(orders.find(0), orders.end());
     ASSERT_EQ(orders.find(1), orders.end());
     ASSERT_EQ(orders.find(2), orders.end());
 
-    EXPECT_EQ(orders.at(0)->m_quantity, 25);
-    EXPECT_EQ(orders.at(0)->m_status, Status::PartiallyFilled);
+    EXPECT_EQ(orders.at(0).m_quantity, 25);
+    EXPECT_EQ(orders.at(0).m_status, Status::PartiallyFilled);
 }
 
 TEST_F(OrderBookTestFixture, BuyOrderFilled)
@@ -102,24 +102,24 @@ TEST_F(OrderBookTestFixture, BuyOrderFilled)
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 2000, 2000);
 
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
-    m_systemMediator->SendOrderRequest(1, "AAPL", Side::Buy, 15, 20);
+    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
+    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
+    m_systemMediator.SendOrderRequest(1, "AAPL", Side::Buy, 15, 20);
 
     OrderBook* orderBook = GetOrderBook("AAPL");
     ASSERT_NE(orderBook, nullptr);
 
-    std::unordered_map<std::size_t, std::shared_ptr<Order>> orders = orderBook->GetOrders();
+    std::unordered_map<std::size_t, Order> orders = orderBook->GetOrders();
 
     ASSERT_EQ(orders.size(), 2);
     ASSERT_NE(orders.find(0), orders.end());
     ASSERT_NE(orders.find(1), orders.end());
     ASSERT_EQ(orders.find(2), orders.end());
 
-    EXPECT_EQ(orders.at(0)->m_quantity, 30);
-    EXPECT_EQ(orders.at(0)->m_status, Status::New);
-    EXPECT_EQ(orders.at(1)->m_quantity, 5);
-    EXPECT_EQ(orders.at(1)->m_status, Status::PartiallyFilled);
+    EXPECT_EQ(orders.at(0).m_quantity, 30);
+    EXPECT_EQ(orders.at(0).m_status, Status::New);
+    EXPECT_EQ(orders.at(1).m_quantity, 5);
+    EXPECT_EQ(orders.at(1).m_status, Status::PartiallyFilled);
 }
 
 TEST_F(OrderBookTestFixture, BothOrdersFilled)
@@ -129,22 +129,22 @@ TEST_F(OrderBookTestFixture, BothOrdersFilled)
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 2000, 2000);
 
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
-    m_systemMediator->SendOrderRequest(1, "AAPL", Side::Buy, 20, 19);
+    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
+    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
+    m_systemMediator.SendOrderRequest(1, "AAPL", Side::Buy, 20, 19);
 
     OrderBook* orderBook = GetOrderBook("AAPL");
     ASSERT_NE(orderBook, nullptr);
 
-    std::unordered_map<std::size_t, std::shared_ptr<Order>> orders = orderBook->GetOrders();
+    std::unordered_map<std::size_t, Order> orders = orderBook->GetOrders();
 
     ASSERT_EQ(orders.size(), 1);
     ASSERT_NE(orders.find(0), orders.end());
     ASSERT_EQ(orders.find(1), orders.end());
     ASSERT_EQ(orders.find(2), orders.end());
 
-    EXPECT_EQ(orders.at(0)->m_quantity, 30);
-    EXPECT_EQ(orders.at(0)->m_status, Status::New);
+    EXPECT_EQ(orders.at(0).m_quantity, 30);
+    EXPECT_EQ(orders.at(0).m_status, Status::New);
 }
 
 TEST_F(OrderBookTestFixture, OrderBookComplexMatching)
@@ -155,31 +155,31 @@ TEST_F(OrderBookTestFixture, OrderBookComplexMatching)
     accountManager->AddAccount(1, 2000, 2000);
 
     std::vector<std::size_t> tradingEntities{ 0, 1, 1, 1, 1, 0, 0, 0, 1, 1 };
-    std::vector<Side> sides{ Side::Buy, Side::Buy, Side::Sell, Side::Sell, Side::Buy, Side::Buy, Side::Buy, Side::Buy, Side::Buy, Side::Sell };
-    std::vector<double> quantities{ 20, 14, 17, 30, 35, 200, 34, 12, 25, 16 };
+    std::vector<Side> sides{ Side::Buy, Side::Buy, Side::Sell, Side::Sell, Side::Buy, Side::Buy, Side::Sell, Side::Sell, Side::Buy, Side::Sell };
+    std::vector<double> quantities{ 20, 14, 17, 30, 35, 14, 34, 12, 25, 16 };
     std::vector<double> prices{ 10, 12, 11.5, 13.2, 11.3, 14.2, 10.6, 10.76, 10.98, 15 };
 
     for (std::size_t i = 0; i < 10; ++i)
     {
-        m_systemMediator->SendOrderRequest(tradingEntities[i], "AAPL", sides[i], quantities[i], prices[i]);
+        m_systemMediator.SendOrderRequest(tradingEntities[i], "AAPL", sides[i], quantities[i], prices[i]);
     }
 
     OrderBook* orderBook = GetOrderBook("AAPL");
     ASSERT_NE(orderBook, nullptr);
 
-    std::unordered_map<std::size_t, std::shared_ptr<Order>> orders = orderBook->GetOrders();
+    std::unordered_map<std::size_t, Order> orders = orderBook->GetOrders();
 
-    ASSERT_EQ(orders.size(), 9);
+    ASSERT_EQ(orders.size(), 6);
     ASSERT_NE(orders.find(0), orders.end());
-    ASSERT_NE(orders.find(1), orders.end());
+    ASSERT_EQ(orders.find(1), orders.end());
     ASSERT_NE(orders.find(2), orders.end());
     ASSERT_NE(orders.find(3), orders.end());
     ASSERT_NE(orders.find(4), orders.end());
-    ASSERT_NE(orders.find(5), orders.end());
-    ASSERT_NE(orders.find(6), orders.end());
-    ASSERT_NE(orders.find(7), orders.end());
+    ASSERT_EQ(orders.find(5), orders.end());
+    ASSERT_EQ(orders.find(6), orders.end());
+    ASSERT_EQ(orders.find(7), orders.end());
     ASSERT_NE(orders.find(8), orders.end());
-    ASSERT_EQ(orders.find(9), orders.end());
+    ASSERT_NE(orders.find(9), orders.end());
 }
 
 TEST_F(OrderBookTestFixture, OrderModified)
@@ -189,26 +189,26 @@ TEST_F(OrderBookTestFixture, OrderModified)
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 2000, 2000);
 
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
-    m_systemMediator->SendOrderRequest(1, "AAPL", Side::Buy, 20, 16);
+    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
+    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
+    m_systemMediator.SendOrderRequest(1, "AAPL", Side::Buy, 20, 16);
 
     OrderBook* orderBook = GetOrderBook("AAPL");
     ASSERT_NE(orderBook, nullptr);
 
     orderBook->ModifyOrder(2, 25, 19);
 
-    std::unordered_map<std::size_t, std::shared_ptr<Order>> orders = orderBook->GetOrders();
+    std::unordered_map<std::size_t, Order> orders = orderBook->GetOrders();
 
     ASSERT_EQ(orders.size(), 2);
     ASSERT_NE(orders.find(0), orders.end());
     ASSERT_EQ(orders.find(1), orders.end());
     ASSERT_NE(orders.find(2), orders.end());
 
-    EXPECT_EQ(orders.at(0)->m_quantity, 30);
-    EXPECT_EQ(orders.at(0)->m_status, Status::New);
-    EXPECT_EQ(orders.at(2)->m_quantity, 5);
-    EXPECT_EQ(orders.at(2)->m_status, Status::PartiallyFilled);
+    EXPECT_EQ(orders.at(0).m_quantity, 30);
+    EXPECT_EQ(orders.at(0).m_status, Status::New);
+    EXPECT_EQ(orders.at(2).m_quantity, 5);
+    EXPECT_EQ(orders.at(2).m_status, Status::PartiallyFilled);
 }
 
 TEST_F(OrderBookTestFixture, OrderCancelled)
@@ -218,24 +218,24 @@ TEST_F(OrderBookTestFixture, OrderCancelled)
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 2000, 2000);
 
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
-    m_systemMediator->SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
-    m_systemMediator->SendOrderRequest(1, "AAPL", Side::Buy, 20, 16);
+    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
+    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
+    m_systemMediator.SendOrderRequest(1, "AAPL", Side::Buy, 20, 16);
 
     OrderBook* orderBook = GetOrderBook("AAPL");
     ASSERT_NE(orderBook, nullptr);
 
     orderBook->CancelOrder(0);
 
-    std::unordered_map<std::size_t, std::shared_ptr<Order>> orders = orderBook->GetOrders();
+    std::unordered_map<std::size_t, Order> orders = orderBook->GetOrders();
 
     ASSERT_EQ(orders.size(), 2);
     ASSERT_EQ(orders.find(0), orders.end());
     ASSERT_NE(orders.find(1), orders.end());
     ASSERT_NE(orders.find(2), orders.end());
 
-    EXPECT_EQ(orders.at(1)->m_quantity, 20);
-    EXPECT_EQ(orders.at(1)->m_status, Status::New);
-    EXPECT_EQ(orders.at(2)->m_quantity, 20);
-    EXPECT_EQ(orders.at(2)->m_status, Status::New);
+    EXPECT_EQ(orders.at(1).m_quantity, 20);
+    EXPECT_EQ(orders.at(1).m_status, Status::New);
+    EXPECT_EQ(orders.at(2).m_quantity, 20);
+    EXPECT_EQ(orders.at(2).m_status, Status::New);
 }

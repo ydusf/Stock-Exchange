@@ -7,17 +7,17 @@
 #include <string>
 #include <unordered_map>
 
-class SystemMediator
+class SystemMediator final
 {
 private:
-    std::unique_ptr<AccountManager> m_accountManager;
-    std::unordered_map<std::string, std::unique_ptr<OrderBook>> m_orderBooks;
+    AccountManager m_accountManager;
+    std::unordered_map<std::string, OrderBook> m_orderBooks;
 
 public:
-    SystemMediator(std::unique_ptr<AccountManager> accountManager);
+    SystemMediator();
 
-    AccountManager* GetAccountManager() const;
-    OrderBook* GetOrderBook(std::string ticker) const;
+    AccountManager* GetAccountManager();
+    OrderBook* GetOrderBook(std::string ticker);
 
     bool SendOrderRequest(std::size_t id, std::string ticker, Side Side, double quantity, double price);
     void SendCancelRequest(std::size_t ownerId, std::size_t orderId);
@@ -26,8 +26,8 @@ public:
     ~SystemMediator();
 
 private:
-    void RegisterOrderBookCallbacks(std::unique_ptr<OrderBook>& orderBook);
-    void on_order_match(const std::shared_ptr<Order>& bid, const std::shared_ptr<Order>& ask, double tradeValue);
-    void on_add_order(const std::shared_ptr<Order>& order);
+    void RegisterOrderBookCallbacks(OrderBook& orderBook);
+    void on_order_match(const Order& bid, const Order& ask, double tradeValue);
+    void on_add_order(const Order& order);
 
 };

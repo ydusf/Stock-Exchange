@@ -1,7 +1,6 @@
 #include "SystemMediator.hxx"
 
-SystemMediator::SystemMediator(std::unique_ptr<AccountManager> accountManager)
-    : m_accountManager(std::move(accountManager))
+SystemMediator::SystemMediator()
 {
 
 }
@@ -11,16 +10,16 @@ SystemMediator::~SystemMediator()
 
 }
 
-AccountManager* SystemMediator::GetAccountManager() const
+AccountManager* SystemMediator::GetAccountManager()
 {
-    return m_accountManager.get();
+    return &m_accountManager;
 }
 
-OrderBook* SystemMediator::GetOrderBook(std::string ticker) const
+OrderBook* SystemMediator::GetOrderBook(std::string ticker)
 {
     if (m_orderBooks.find(ticker) != m_orderBooks.end())
     {
-        return m_orderBooks.at(ticker).get();
+        return &m_orderBooks.at(ticker);
     }
 
     return nullptr;
@@ -28,22 +27,19 @@ OrderBook* SystemMediator::GetOrderBook(std::string ticker) const
 
 bool SystemMediator::SendOrderRequest(std::size_t ownerId, std::string ticker, Side side, double quantity, double price)
 {
-    std::optional<std::shared_ptr<Account>> account = m_accountManager->GetAccount(ownerId);
+    Account* account = m_accountManager.GetAccount(ownerId);
 
-    if (!account)
-        return false;
-
-    if (!(*account)->CanPlaceOrder(quantity * price))
+    if (!account || !(account->CanPlaceOrder(side, quantity * price)))
         return false;
 
     OrderBook* orderBook = GetOrderBook(ticker);
 
     if (!orderBook) // create orderBook
     {
-        std::unique_ptr<OrderBook> newOrderBook = std::make_unique<OrderBook>();
+        OrderBook newOrderBook;
         RegisterOrderBookCallbacks(newOrderBook);
 
-        newOrderBook->AddOrder(ownerId, ticker, side, quantity, price);
+        newOrderBook.AddOrder(ownerId, ticker, side, quantity, price);
 
         m_orderBooks.insert({ ticker, std::move(newOrderBook) });
     }
@@ -65,55 +61,55 @@ void SystemMediator::SendModifyRequest(std::size_t ownerId, std::size_t orderId,
 
 }
 
-void SystemMediator::RegisterOrderBookCallbacks(std::unique_ptr<OrderBook>& orderBook)
+void SystemMediator::RegisterOrderBookCallbacks(OrderBook& orderBook)
 {
-    orderBook->RegisterOrderMatchCallback([this](const std::shared_ptr<Order>& bid, const std::shared_ptr<Order>& ask, double tradeValue)
+    orderBook.RegisterOrderMatchCallback([this](const Order& bid, const Order& ask, double tradeValue)
         {
             on_order_match(bid, ask, tradeValue);
         });
 
-    orderBook->RegisterAddOrderCallback([this](const std::shared_ptr<Order>& order)
+    orderBook.RegisterAddOrderCallback([this](const Order& order)
         {
             on_add_order(order);
         });
 }
 
-void SystemMediator::on_order_match(const std::shared_ptr<Order>& bid, const std::shared_ptr<Order>& ask, double tradeValue)
+void SystemMediator::on_order_match(const Order& bid, const Order& ask, double tradeValue)
 {
-    std::optional<std::shared_ptr<Account>> buyer = m_accountManager->GetAccount(bid->m_ownerId);
-    std::optional<std::shared_ptr<Account>> seller = m_accountManager->GetAccount(ask->m_ownerId);
+    Account* buyer = m_accountManager.GetAccount(bid.m_ownerId);
+    Account* seller = m_accountManager.GetAccount(ask.m_ownerId);
 
     if (!buyer || !seller)
         return;
 
-    if (bid->m_status == Status::Filled)
+    if (bid.m_status == Status::Filled)
     {
-        (*buyer)->RemoveOrder(bid->m_orderId);
+        buyer->RemoveOrder(bid.m_orderId);
     }
-    if (ask->m_status == Status::Filled)
+    if (ask.m_status == Status::Filled)
     {
-        (*seller)->RemoveOrder(ask->m_orderId);
+        seller->RemoveOrder(ask.m_orderId);
     }
 
-    m_accountManager->UpdateBalances(bid->m_ownerId, tradeValue);
-    (*buyer)->UpdateReservedCash(tradeValue); // only update for buy orders -> sell orders never reserved anything
+    m_accountManager.UpdateBalances(bid.m_ownerId, tradeValue);
+    buyer->UpdateReservedCash(tradeValue); // only update for buy orders . sell orders never reserved anything
 
-    m_accountManager->UpdateBalances(ask->m_ownerId, -tradeValue);
+    m_accountManager.UpdateBalances(ask.m_ownerId, -tradeValue);
 }
 
-void SystemMediator::on_add_order(const std::shared_ptr<Order>& order)
+void SystemMediator::on_add_order(const Order& order)
 {
-    std::optional<std::shared_ptr<Account>> owner = m_accountManager->GetAccount(order->m_ownerId);
+    Account* owner = m_accountManager.GetAccount(order.m_ownerId);
 
     if (!owner)
         return;
 
-    (*owner)->AddOrder(order->m_orderId);
+    owner->AddOrder(order.m_orderId);
 
-    double tradeValue = order->m_price * order->m_quantity;
+    double tradeValue = order.m_price * order.m_quantity;
 
-    if (order->m_side == Side::Buy)
+    if (order.m_side == Side::Buy)
     {
-        (*owner)->UpdateReservedCash(-tradeValue);
+        owner->UpdateReservedCash(-tradeValue);
     }
 }

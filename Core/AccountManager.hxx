@@ -7,17 +7,17 @@
 #include <cstddef>
 #include <optional>
 
-class AccountManager
+class AccountManager final
 {
 private:
-    std::unordered_map<std::size_t, std::shared_ptr<Account>> m_accounts;
+    std::unordered_map<std::size_t, Account> m_accounts;
 
 public:
     AccountManager();
 
-    std::unordered_map<std::size_t, std::shared_ptr<Account>> GetAccounts() const;
+    std::unordered_map<std::size_t, Account> GetAccounts() const;
 
-    std::optional<std::shared_ptr<Account>> GetAccount(std::size_t ownerId) const;
+    Account* GetAccount(std::size_t ownerId);
     void AddAccount(std::size_t ownerId, double cashBalance, double assetBalance);
     void UpdateBalances(std::size_t, double tradeValue);
 

@@ -59,25 +59,25 @@ class OrderBook
 {
     struct BuyOrderComparator
     {
-        bool operator()(const std::shared_ptr<Order>& lhs, const std::shared_ptr<Order>& rhs) const
+        bool operator()(const Order& lhs, const Order& rhs) const
         {
-            return (lhs->m_price != rhs->m_price) ? lhs->m_price < rhs->m_price : lhs->m_timestamp < rhs->m_timestamp;
+            return (lhs.m_price != rhs.m_price) ? lhs.m_price < rhs.m_price : lhs.m_timestamp < rhs.m_timestamp;
         }
     };
 
     struct SellOrderComparator
     {
-        bool operator()(const std::shared_ptr<Order>& lhs, const std::shared_ptr<Order>& rhs) const
+        bool operator()(const Order& lhs, const Order& rhs) const
         {
-            return (lhs->m_price != rhs->m_price) ? lhs->m_price > rhs->m_price : lhs->m_timestamp < rhs->m_timestamp;
+            return (lhs.m_price != rhs.m_price) ? lhs.m_price > rhs.m_price : lhs.m_timestamp < rhs.m_timestamp;
         }
     };
 
-    typedef std::priority_queue<std::shared_ptr<Order>, std::vector<std::shared_ptr<Order>>, BuyOrderComparator> BuyOrderQueue;
-    typedef std::priority_queue<std::shared_ptr<Order>, std::vector<std::shared_ptr<Order>>, SellOrderComparator> SellOrderQueue;
+    typedef std::priority_queue<Order, std::vector<Order>, BuyOrderComparator> BuyOrderQueue;
+    typedef std::priority_queue<Order, std::vector<Order>, SellOrderComparator> SellOrderQueue;
 
-    typedef std::function<void(const std::shared_ptr<Order>& bid, const std::shared_ptr<Order>& ask, double tradeValue)> OrderMatchCallback;
-    typedef std::function<void(const std::shared_ptr<Order>& order)> AddOrderCallback;
+    typedef std::function<void(const Order& bid, const Order& ask, double tradeValue)> OrderMatchCallback;
+    typedef std::function<void(const Order& order)> AddOrderCallback;
 
 private: // attributes
     std::size_t m_currOrderId = 0;
@@ -85,15 +85,15 @@ private: // attributes
     OrderMatchCallback m_orderMatchCallback;
     AddOrderCallback m_addOrderCallback;
 
-    std::unordered_map<std::size_t, std::shared_ptr<Order>> m_orders;
+    std::unordered_map<std::size_t, Order> m_orders;
     BuyOrderQueue m_bids;
     SellOrderQueue m_asks;
 
 public: // methods
     OrderBook();
 
-    std::optional<std::shared_ptr<Order>> GetOrder(std::size_t id) const;
-    std::unordered_map<std::size_t, std::shared_ptr<Order>> GetOrders() const;
+    std::optional<Order> GetOrder(std::size_t id) const;
+    std::unordered_map<std::size_t, Order> GetOrders() const;
 
     void AddOrder(std::size_t ownerId, std::string ticker, Side side, double quantity, double price);
     void ModifyOrder(std::size_t orderId, double newQuantity, double newPrice);
