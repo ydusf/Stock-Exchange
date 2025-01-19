@@ -10,6 +10,7 @@ class OrderBookTestFixture : public testing::Test
 {
 protected:
     SystemMediator m_systemMediator;
+    std::string m_stock = "AAPL";
 
     OrderBookTestFixture()
     {
@@ -57,9 +58,9 @@ TEST_F(OrderBookTestFixture, AddOrder)
     Side side = Side::Sell;
     double quantity = 30;
     double price = 20;
-    m_systemMediator.SendOrderRequest(0, "AAPL", side, quantity, price);
+    m_systemMediator.SendOrderRequest(0, m_stock, side, quantity, price);
 
-    OrderBook* orderBook = GetOrderBook("AAPL");
+    OrderBook* orderBook = GetOrderBook(m_stock);
     ASSERT_NE(orderBook, nullptr);
 
     std::vector<Order> orders = GetOrders(*orderBook);
@@ -77,11 +78,11 @@ TEST_F(OrderBookTestFixture, SellOrderFilled)
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 2000, 2000);
 
-    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
-    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
-    m_systemMediator.SendOrderRequest(1, "AAPL", Side::Buy, 25, 20);
+    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 30, 20);
+    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 20, 18);
+    m_systemMediator.SendOrderRequest(1, m_stock, Side::Buy, 25, 20);
 
-    OrderBook* orderBook = GetOrderBook("AAPL");
+    OrderBook* orderBook = GetOrderBook(m_stock);
     ASSERT_NE(orderBook, nullptr);
 
     std::unordered_map<std::size_t, Order> orders = orderBook->GetOrders();
@@ -102,11 +103,11 @@ TEST_F(OrderBookTestFixture, BuyOrderFilled)
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 2000, 2000);
 
-    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
-    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
-    m_systemMediator.SendOrderRequest(1, "AAPL", Side::Buy, 15, 20);
+    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 30, 20);
+    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 20, 18);
+    m_systemMediator.SendOrderRequest(1, m_stock, Side::Buy, 15, 20);
 
-    OrderBook* orderBook = GetOrderBook("AAPL");
+    OrderBook* orderBook = GetOrderBook(m_stock);
     ASSERT_NE(orderBook, nullptr);
 
     std::unordered_map<std::size_t, Order> orders = orderBook->GetOrders();
@@ -129,11 +130,11 @@ TEST_F(OrderBookTestFixture, BothOrdersFilled)
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 2000, 2000);
 
-    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
-    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
-    m_systemMediator.SendOrderRequest(1, "AAPL", Side::Buy, 20, 19);
+    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 30, 20);
+    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 20, 18);
+    m_systemMediator.SendOrderRequest(1, m_stock, Side::Buy, 20, 19);
 
-    OrderBook* orderBook = GetOrderBook("AAPL");
+    OrderBook* orderBook = GetOrderBook(m_stock);
     ASSERT_NE(orderBook, nullptr);
 
     std::unordered_map<std::size_t, Order> orders = orderBook->GetOrders();
@@ -161,10 +162,10 @@ TEST_F(OrderBookTestFixture, OrderBookComplexMatching)
 
     for (std::size_t i = 0; i < 10; ++i)
     {
-        m_systemMediator.SendOrderRequest(tradingEntities[i], "AAPL", sides[i], quantities[i], prices[i]);
+        m_systemMediator.SendOrderRequest(tradingEntities[i], m_stock, sides[i], quantities[i], prices[i]);
     }
 
-    OrderBook* orderBook = GetOrderBook("AAPL");
+    OrderBook* orderBook = GetOrderBook(m_stock);
     ASSERT_NE(orderBook, nullptr);
 
     std::unordered_map<std::size_t, Order> orders = orderBook->GetOrders();
@@ -180,6 +181,11 @@ TEST_F(OrderBookTestFixture, OrderBookComplexMatching)
     ASSERT_EQ(orders.find(7), orders.end());
     ASSERT_NE(orders.find(8), orders.end());
     ASSERT_NE(orders.find(9), orders.end());
+
+    for (auto& [id, acc] : accountManager->GetAccounts())
+    {
+        std::cout << acc.GetNetworth() << '\n';
+    }
 }
 
 TEST_F(OrderBookTestFixture, OrderModified)
@@ -189,11 +195,11 @@ TEST_F(OrderBookTestFixture, OrderModified)
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 2000, 2000);
 
-    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
-    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
-    m_systemMediator.SendOrderRequest(1, "AAPL", Side::Buy, 20, 16);
+    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 30, 20);
+    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 20, 18);
+    m_systemMediator.SendOrderRequest(1, m_stock, Side::Buy, 20, 16);
 
-    OrderBook* orderBook = GetOrderBook("AAPL");
+    OrderBook* orderBook = GetOrderBook(m_stock);
     ASSERT_NE(orderBook, nullptr);
 
     orderBook->ModifyOrder(2, 25, 19);
@@ -218,11 +224,11 @@ TEST_F(OrderBookTestFixture, OrderCancelled)
     accountManager->AddAccount(0, 2000, 2000);
     accountManager->AddAccount(1, 2000, 2000);
 
-    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 30, 20);
-    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Sell, 20, 18);
-    m_systemMediator.SendOrderRequest(1, "AAPL", Side::Buy, 20, 16);
+    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 30, 20);
+    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 20, 18);
+    m_systemMediator.SendOrderRequest(1, m_stock, Side::Buy, 20, 16);
 
-    OrderBook* orderBook = GetOrderBook("AAPL");
+    OrderBook* orderBook = GetOrderBook(m_stock);
     ASSERT_NE(orderBook, nullptr);
 
     orderBook->CancelOrder(0);

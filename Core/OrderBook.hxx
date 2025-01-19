@@ -10,6 +10,7 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include <mutex>
 
 enum class Side
 {
@@ -55,7 +56,23 @@ struct Order
     }
 };
 
-class OrderBook
+struct MarketQuote
+{
+    double m_lastPrice;
+    double m_topBid;
+    double m_topAsk;
+    double m_volume;
+};
+
+struct Trade
+{
+    const Order& m_buyer;
+    const Order& m_seller;
+    double m_price;
+    double m_quantity;
+};
+
+namespace Comparator
 {
     struct BuyOrderComparator
     {
@@ -72,12 +89,15 @@ class OrderBook
             return (lhs.m_price != rhs.m_price) ? lhs.m_price > rhs.m_price : lhs.m_timestamp < rhs.m_timestamp;
         }
     };
+}
 
-    typedef std::priority_queue<Order, std::vector<Order>, BuyOrderComparator> BuyOrderQueue;
-    typedef std::priority_queue<Order, std::vector<Order>, SellOrderComparator> SellOrderQueue;
+class OrderBook final
+{
+    typedef std::priority_queue<Order, std::vector<Order>, Comparator::BuyOrderComparator> BuyOrderQueue;
+    typedef std::priority_queue<Order, std::vector<Order>, Comparator::SellOrderComparator> SellOrderQueue;
 
-    typedef std::function<void(const Order& bid, const Order& ask, double tradeValue)> OrderMatchCallback;
-    typedef std::function<void(const Order& order)> AddOrderCallback;
+    typedef std::function<bool(const Trade& trade)> OrderMatchCallback;
+    typedef std::function<bool(const Order& order)> AddOrderCallback;
 
 private: // attributes
     std::size_t m_currOrderId = 0;
@@ -89,9 +109,12 @@ private: // attributes
     BuyOrderQueue m_bids;
     SellOrderQueue m_asks;
 
+    MarketQuote m_quote;
+
 public: // methods
     OrderBook();
 
+    MarketQuote GetMarketQuote() const;
     std::optional<Order> GetOrder(std::size_t id) const;
     std::unordered_map<std::size_t, Order> GetOrders() const;
 
@@ -105,6 +128,7 @@ public: // methods
     ~OrderBook();
 
 private: // methods
+    void UpdateStockPrice(double bidPrice, double askPrice);
     void MatchOrders();
     void ResetQueue();
 };

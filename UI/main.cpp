@@ -1,4 +1,5 @@
-#include "C:\Users\SEB\Desktop\projects\StockExchange\Core\SystemMediator.hxx"
+#include "SystemMediator.hxx"
+#include "TradingStrategy.hxx"
 
 #include <iostream>
 #include <random>
@@ -63,15 +64,17 @@ static std::vector<std::vector<std::string>> ParseStockCSV(const std::string& fi
     return data;
 }
 
-static void TimingDiagnostics()
+static void RetrieveData
+(
+    std::vector<std::string>& userIds,
+    std::vector<std::string>& stocks,
+    std::vector<Side>& sides,
+    std::vector<double>& quantities,
+    std::vector<double>& prices
+)
 {
-    std::string filename = "stock_orders1mil.csv";
+    std::string filename = "stock_orders250k.csv";
     auto csvData = ParseStockCSV(filename);
-
-    std::vector<std::string> userIds;
-    std::vector<Side> sides;
-    std::vector<double> quantities;
-    std::vector<double> prices;
 
     bool isHeader = true;
 
@@ -91,6 +94,9 @@ static void TimingDiagnostics()
             Side side = (row[2] == "Bid") ? Side::Buy : Side::Sell;
             sides.push_back(side);
 
+            std::string stock = row[3];
+            stocks.push_back(stock);
+
             double price = std::stod(row[4]);
             prices.push_back(price);
 
@@ -98,6 +104,17 @@ static void TimingDiagnostics()
             quantities.push_back(quantity);
         }
     }
+}
+
+static void TimingDiagnostics()
+{
+    std::vector<std::string> userIds;
+    std::vector<std::string> stocks;
+    std::vector<Side> sides;
+    std::vector<double> quantities;
+    std::vector<double> prices;
+
+    RetrieveData(userIds, stocks, sides, quantities, prices);
 
     SystemMediator systemMediator;
 
@@ -107,9 +124,17 @@ static void TimingDiagnostics()
 
     for (std::size_t id = 0; id < userIds.size(); ++id)
     {
-        idMap[userIds[id]] = id;
+        std::string uId = userIds[id];
+        
+        if (idMap.find(uId) != idMap.end())
+            continue;
+        
+        idMap.insert({ uId, id });
         accountManager->AddAccount(id, 100000, 100000);
     }
+
+    accountManager->AddAccount(userIds.size(), 100000, 100000);
+    TradingStrategySimple simpleStrategy(systemMediator, *accountManager->GetAccount(userIds.size()), "AAPL");
 
     std::vector<std::chrono::nanoseconds> latencies;
 
@@ -117,11 +142,13 @@ static void TimingDiagnostics()
 
     auto startTotal = std::chrono::high_resolution_clock::now();
 
+    simpleStrategy.Run();
+
     for (std::size_t i = 0; i < OPERATIONS; ++i)
     {
-        std::size_t id = idMap[userIds[i]];
+        std::size_t id = idMap.at(userIds[i]);
         auto startOp = std::chrono::high_resolution_clock::now();
-        systemMediator.SendOrderRequest(id, "AAPL", sides[i], quantities[i], prices[i]);
+        systemMediator.SendOrderRequest(id, stocks[i], sides[i], quantities[i], prices[i]);
         auto endOp = std::chrono::high_resolution_clock::now();
 
         latencies.push_back(endOp - startOp);
@@ -140,36 +167,34 @@ static void TimingDiagnostics()
     }
 
     std::sort(networths.begin(), networths.end());
-
-    // Calculate percentiles
+    
+    auto& np1 = networths[networths.size() * 0.01];
+    auto& np10 = networths[networths.size() * 0.1];
+    auto& np25 = networths[networths.size() * 0.25];
     auto& np50 = networths[networths.size() * 0.50];
     auto& np90 = networths[networths.size() * 0.90];
     auto& np95 = networths[networths.size() * 0.95];
     auto& np99 = networths[networths.size() * 0.99];
     auto& maxNetworth = networths.back();
 
-    // Calculate total duration
     auto totalDuration = endTotal - startTotal;
     auto totalMs = std::chrono::duration_cast<std::chrono::milliseconds>(totalDuration).count();
 
-    // Sort latencies for percentile calculations
     std::sort(latencies.begin(), latencies.end());
 
-    // Calculate percentiles
     auto& p50 = latencies[OPERATIONS * 0.50];
     auto& p90 = latencies[OPERATIONS * 0.90];
     auto& p95 = latencies[OPERATIONS * 0.95];
     auto& p99 = latencies[OPERATIONS * 0.99];
     auto& maxLatency = latencies.back();
 
-    // Calculate mean latency
     std::chrono::nanoseconds totalLatency(0);
-    for (const auto& latency : latencies) {
+    for (const auto& latency : latencies) 
+    {
         totalLatency += latency;
     }
     auto meanLatency = totalLatency / OPERATIONS;
 
-    // Print results
     std::cout << "Performance Results:\n";
     std::cout << "-------------------\n";
     std::cout << "Total time: " << totalMs << "ms for " << OPERATIONS << " operations\n";
@@ -185,48 +210,26 @@ static void TimingDiagnostics()
     PrintNewLine();
     std::cout << "User Financials:\n";
     std::cout << "--------------------\n";
+    std::cout << "P1:  " << np1 << "\n";
+    std::cout << "P10:  " << np10 << "\n";
+    std::cout << "P25:  " << np25 << "\n";
     std::cout << "P50:  " << np50 << "\n";
     std::cout << "P90:  " << np90 << "\n";
     std::cout << "P95:  " << np95 << "\n";
     std::cout << "P99:  " << np99 << "\n";
     std::cout << "Max:  " << maxNetworth << "\n";
+    std::cout << "Bot: " << accountManager->GetAccount(userIds.size())->GetNetworth() << '\n';
 }
 
 static void LaunchApplication()
 {
-    std::string filename = "stock_orders.csv";
-    auto csvData = ParseStockCSV(filename);
-
     std::vector<std::string> userIds;
+    std::vector<std::string> stocks;
     std::vector<Side> sides;
     std::vector<double> quantities;
     std::vector<double> prices;
-
-    bool isHeader = true;
-
-    for (const auto& row : csvData)
-    {
-        if (isHeader)
-        {
-            isHeader = false;
-            continue;
-        }
-
-        if (row.size() >= 6)
-        {
-            std::string userId = row[1];
-            userIds.push_back(userId);
-
-            Side side = (row[2] == "Bid") ? Side::Buy : Side::Sell;
-            sides.push_back(side);
-
-            double price = std::stod(row[4]);
-            prices.push_back(price);
-
-            double quantity = std::stod(row[5]);
-            quantities.push_back(quantity);
-        }
-    }
+    
+    RetrieveData(userIds, stocks, sides, quantities, prices);
 
     SystemMediator systemMediator;
 
@@ -239,14 +242,14 @@ static void LaunchApplication()
     for (std::size_t id = 0; id < userIds.size(); ++id)
     {
         idMap[userIds[id]] = id;
-        accountManager->AddAccount(id, 100000, 100000);
+        accountManager->AddAccount(id, 10000, 10000);
     }
 
     std::cout << "Trading has begun!" << '\n';
     PrintNewLine();
     for (std::size_t i = 0; i < OPERATIONS; ++i)
     {
-        bool success = systemMediator.SendOrderRequest(idMap.at(userIds.at(i)), "AAPL", sides[i], quantities[i], prices[i]);
+        bool success = systemMediator.SendOrderRequest(idMap.at(userIds.at(i)), stocks[i], sides[i], quantities[i], prices[i]);
 
         if (!success)
             continue;

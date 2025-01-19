@@ -17,17 +17,19 @@ public:
     SystemMediator();
 
     AccountManager* GetAccountManager();
-    OrderBook* GetOrderBook(std::string ticker);
+    OrderBook* GetOrderBook(std::string& ticker);
 
-    bool SendOrderRequest(std::size_t id, std::string ticker, Side Side, double quantity, double price);
+    bool SendOrderRequest(std::size_t ownerId, std::string& ticker, Side Side, double quantity, double price);
     void SendCancelRequest(std::size_t ownerId, std::size_t orderId);
     void SendModifyRequest(std::size_t ownerId, std::size_t orderId, double newQuantity, double newPrice);
+
+    MarketQuote QueryMarketData(std::string& ticker);
 
     ~SystemMediator();
 
 private:
     void RegisterOrderBookCallbacks(OrderBook& orderBook);
-    void on_order_match(const Order& bid, const Order& ask, double tradeValue);
-    void on_add_order(const Order& order);
+    bool on_order_match(const Trade& trade);
+    bool on_add_order(const Order& order);
 
 };

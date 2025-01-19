@@ -31,21 +31,26 @@ void AccountManager::AddAccount(std::size_t id, double cashBalance, double asset
     if (m_accounts.find(id) != m_accounts.end()) // user already added;
         return;
 
-    m_accounts.insert({ id, Account(cashBalance, assetBalance) });
+    m_accounts.insert({ id, Account(id, cashBalance, assetBalance) });
 }
 
-void AccountManager::UpdateBalances(std::size_t ownerId, double tradeValue)
+void AccountManager::UpdateBalances(const Trade& trade)
 {
-    std::optional<Account*> account = GetAccount(ownerId);
+    const auto& [bid, ask, price, quantity] = trade;
+    double tradeValue = price * quantity;
 
-    if (!account)
+    Account* buyer = GetAccount(trade.m_buyer.m_ownerId);
+    Account* seller = GetAccount(trade.m_buyer.m_ownerId);
+
+    if (!buyer || !seller)
         return;
 
-    Account* accountPtr = (*account);
+    buyer->UpdateCashBalance(-tradeValue);
+    buyer->UpdateAssetBalance(tradeValue);
+    buyer->UpdateReservedCash(-tradeValue);
+    buyer->UpdateAssetQuantities(bid.m_ticker, quantity);
 
-    double cashBalance = accountPtr->GetCashBalance();
-    double assetBalance = accountPtr->GetAssetBalance();
-
-    accountPtr->SetCashBalance(cashBalance - tradeValue);
-    accountPtr->SetAssetBalance(assetBalance + tradeValue);
+    seller->UpdateCashBalance(tradeValue);
+    seller->UpdateAssetBalance(-tradeValue);
+    seller->UpdateAssetQuantities(bid.m_ticker, -quantity);
 }

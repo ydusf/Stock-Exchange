@@ -12,6 +12,7 @@ class AccountManagerTestFixture : public ::testing::Test
 {
 protected:
     SystemMediator m_systemMediator;
+    std::string m_stock = "AAPL";
 
     AccountManagerTestFixture()
     {
@@ -71,13 +72,13 @@ TEST_F(AccountManagerTestFixture, UpdateBalancesAfterOrder)
     ASSERT_NE(account1, nullptr);
 
     // Buy order with trade value: 1200, from account with id: 0
-    m_systemMediator.SendOrderRequest(0, "AAPL", Side::Buy, 12, 100);
+    m_systemMediator.SendOrderRequest(0, m_stock, Side::Buy, 12, 100);
     EXPECT_EQ(account0->GetReservedBalance(), 1200);
     EXPECT_EQ(account0->GetCashBalance(), 2000);
     EXPECT_EQ(account0->GetAssetBalance(), 2000);
 
     // Sell order with trade value: 1800, from account with id: 1
-    m_systemMediator.SendOrderRequest(1, "AAPL", Side::Sell, 18, 100);
+    m_systemMediator.SendOrderRequest(1, m_stock, Side::Sell, 18, 100);
     EXPECT_EQ(account1->GetReservedBalance(), 0);
     EXPECT_EQ(account1->GetCashBalance(), 2200);
     EXPECT_EQ(account1->GetAssetBalance(), 1300);

@@ -19,7 +19,7 @@ public:
 
     Account* GetAccount(std::size_t ownerId);
     void AddAccount(std::size_t ownerId, double cashBalance, double assetBalance);
-    void UpdateBalances(std::size_t, double tradeValue);
+    void UpdateBalances(const Trade& trade);
 
     ~AccountManager();
 
