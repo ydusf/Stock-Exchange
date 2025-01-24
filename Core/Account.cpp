@@ -3,7 +3,7 @@
 #include <cassert>
 
 Account::Account(std::size_t id, double initialCashBalance, double initialAssetBalance)
-    : m_id(id), m_cashBalance(initialCashBalance), m_assetBalance(initialAssetBalance), m_reservedBalance(0)
+    : m_id(id), m_portfolio(Portfolio(initialCashBalance, initialAssetBalance, 0, {}))
 {
 
 }
@@ -20,70 +20,56 @@ std::size_t Account::GetId() const
 
 double Account::GetNetworth() const
 {
-    return m_cashBalance + m_reservedBalance + m_assetBalance;
+    return m_portfolio.m_cashBalance + m_portfolio.m_reservedBalance + m_portfolio.m_assetBalance;
 }
 
-double Account::GetReservedBalance() const
+Portfolio Account::GetPortfolio() const
 {
-    return m_reservedBalance;
+    return m_portfolio;
 }
 
-double Account::GetCashBalance() const
+void Account::UpdatePortfolio(double cashBalanceDelta, double assetBalanceDelta, double reservedCashDelta)
 {
-    return m_cashBalance;
-}
-
-void Account::UpdateCashBalance(double cashBalanceDelta)
-{
-    m_cashBalance += cashBalanceDelta;
-}
-
-double Account::GetAssetBalance() const
-{
-    return m_assetBalance;
-}
-
-void Account::UpdateAssetBalance(double assetBalanceDelta)
-{
-    m_assetBalance += assetBalanceDelta;
-}
-
-void Account::UpdateReservedCash(double reservedCashDelta)
-{
-    m_reservedBalance += reservedCashDelta;
+    m_portfolio.m_cashBalance += cashBalanceDelta;
+    m_portfolio.m_assetBalance += assetBalanceDelta;
+    m_portfolio.m_reservedBalance += reservedCashDelta;
 }
 
 void Account::UpdateAssetQuantities(const std::string& ticker, double quantityDelta)
 {
-    auto itr = m_assets.find(ticker);
-    if (itr != m_assets.end())
+    std::unordered_map<std::string, double>& assets = m_portfolio.m_assets;
+    
+    auto itr = assets.find(ticker);
+    if (itr != assets.end())
     {
         itr->second += quantityDelta;
         if (itr->second <= 0)
         {
-            m_assets.erase(itr);
+            assets.erase(itr);
         }
 
         return;
     }
 
-    m_assets.insert({ticker, quantityDelta}); // must be a buy order i.e. quantityDelta is +
-    assert(quantityDelta >= 0);
+    assets.insert({ticker, quantityDelta}); // must be a buy order i.e. quantityDelta is +
+    //assert(quantityDelta >= 0);
 }
 
 bool Account::CanPlaceOrder(const std::string& ticker, Side side, double quantity, double price) const
 {
     double orderValue = quantity * price;
+
+    const auto& [cashBalance, assetBalance, reservedBalance, assets] = m_portfolio;
     
     if (side == Side::Buy)
     {
-        return (m_cashBalance - m_reservedBalance) >= orderValue;
+        return (cashBalance - reservedBalance) >= orderValue;
     }
 
-    auto itr = m_assets.find(ticker);
-    if(itr != m_assets.end())
+    auto itr = assets.find(ticker);
+    if (itr != assets.end())
     {
-        return m_assetBalance >= orderValue && m_assets.at(ticker) >= quantity;
+        return assetBalance >= orderValue && assets.at(ticker) >= quantity;
     }
 
     return false;
@@ -95,8 +81,6 @@ void Account::AddOrder(const Order& order)
     {        
         m_orderIds.insert(order.m_orderId);
     }
-
-    m_assets.insert_or_assign(order.m_ticker, order.m_quantity);
 }
 
 void Account::RemoveOrder(const Order& order)

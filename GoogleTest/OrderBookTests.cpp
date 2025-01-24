@@ -2,14 +2,14 @@
 
 #include "OrderBook.hxx"
 #include "AccountManager.hxx"
-#include "SystemMediator.hxx"
+#include "Exchange.hxx"
 
 #include <memory>
 
 class OrderBookTestFixture : public testing::Test
 {
 protected:
-    SystemMediator m_systemMediator;
+    Exchange m_exchange;
     std::string m_stock = "AAPL";
 
     OrderBookTestFixture()
@@ -19,12 +19,12 @@ protected:
 
     AccountManager* GetAccountManager()
     {
-        return m_systemMediator.GetAccountManager();
+        return m_exchange.GetAccountManager();
     }
 
     OrderBook* GetOrderBook(std::string ticker)
     {
-        return m_systemMediator.GetOrderBook(ticker);
+        return m_exchange.GetOrderBook(ticker);
     }
 
     ~OrderBookTestFixture()
@@ -52,13 +52,17 @@ TEST_F(OrderBookTestFixture, AddOrder)
 {
     AccountManager* accountManager = GetAccountManager();
 
-    accountManager->AddAccount(0, 2000, 2000);
-    accountManager->AddAccount(1, 2000, 2000);
+    std::size_t id0 = accountManager->GetNextAvailableId();
+    accountManager->AddAccount(id0, 2000, 2000);
+
+    std::size_t id1 = accountManager->GetNextAvailableId();
+    accountManager->AddAccount(id1, 2000, 2000);
 
     Side side = Side::Sell;
     double quantity = 30;
     double price = 20;
-    m_systemMediator.SendOrderRequest(0, m_stock, side, quantity, price);
+    m_exchange.AddSeedData(id0, m_stock, 30);
+    m_exchange.SendOrderRequest(id0, m_stock, side, quantity, price);
 
     OrderBook* orderBook = GetOrderBook(m_stock);
     ASSERT_NE(orderBook, nullptr);
@@ -75,12 +79,16 @@ TEST_F(OrderBookTestFixture, SellOrderFilled)
 {
     AccountManager* accountManager = GetAccountManager();
 
-    accountManager->AddAccount(0, 2000, 2000);
-    accountManager->AddAccount(1, 2000, 2000);
+    std::size_t id0 = accountManager->GetNextAvailableId();
+    accountManager->AddAccount(id0, 2000, 2000);
 
-    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 30, 20);
-    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 20, 18);
-    m_systemMediator.SendOrderRequest(1, m_stock, Side::Buy, 25, 20);
+    std::size_t id1 = accountManager->GetNextAvailableId();
+    accountManager->AddAccount(id1, 2000, 2000);
+
+    m_exchange.AddSeedData(id0, m_stock, 50);
+    m_exchange.SendOrderRequest(0, m_stock, Side::Sell, 30, 20);
+    m_exchange.SendOrderRequest(0, m_stock, Side::Sell, 20, 18);
+    m_exchange.SendOrderRequest(1, m_stock, Side::Buy, 25, 20);
 
     OrderBook* orderBook = GetOrderBook(m_stock);
     ASSERT_NE(orderBook, nullptr);
@@ -100,12 +108,17 @@ TEST_F(OrderBookTestFixture, BuyOrderFilled)
 {
     AccountManager* accountManager = GetAccountManager();
 
-    accountManager->AddAccount(0, 2000, 2000);
-    accountManager->AddAccount(1, 2000, 2000);
+    std::size_t id0 = accountManager->GetNextAvailableId();
+    accountManager->AddAccount(id0, 2000, 2000);
 
-    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 30, 20);
-    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 20, 18);
-    m_systemMediator.SendOrderRequest(1, m_stock, Side::Buy, 15, 20);
+    std::size_t id1 = accountManager->GetNextAvailableId();
+    accountManager->AddAccount(id1, 2000, 2000);
+
+    m_exchange.AddSeedData(id0, m_stock, 50);
+
+    m_exchange.SendOrderRequest(0, m_stock, Side::Sell, 30, 20);
+    m_exchange.SendOrderRequest(0, m_stock, Side::Sell, 20, 18);
+    m_exchange.SendOrderRequest(1, m_stock, Side::Buy, 15, 20);
 
     OrderBook* orderBook = GetOrderBook(m_stock);
     ASSERT_NE(orderBook, nullptr);
@@ -127,12 +140,16 @@ TEST_F(OrderBookTestFixture, BothOrdersFilled)
 {
     AccountManager* accountManager = GetAccountManager();
 
-    accountManager->AddAccount(0, 2000, 2000);
-    accountManager->AddAccount(1, 2000, 2000);
+    std::size_t id0 = accountManager->GetNextAvailableId();
+    accountManager->AddAccount(id0, 2000, 2000);
 
-    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 30, 20);
-    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 20, 18);
-    m_systemMediator.SendOrderRequest(1, m_stock, Side::Buy, 20, 19);
+    std::size_t id1 = accountManager->GetNextAvailableId();
+    accountManager->AddAccount(id1, 2000, 2000);
+    
+    m_exchange.AddSeedData(id0, m_stock, 50);
+    m_exchange.SendOrderRequest(id0, m_stock, Side::Sell, 30, 20);
+    m_exchange.SendOrderRequest(id0, m_stock, Side::Sell, 20, 18);
+    m_exchange.SendOrderRequest(id1, m_stock, Side::Buy, 20, 19);
 
     OrderBook* orderBook = GetOrderBook(m_stock);
     ASSERT_NE(orderBook, nullptr);
@@ -152,17 +169,23 @@ TEST_F(OrderBookTestFixture, OrderBookComplexMatching)
 {
     AccountManager* accountManager = GetAccountManager();
 
-    accountManager->AddAccount(0, 2000, 2000);
-    accountManager->AddAccount(1, 2000, 2000);
+    std::size_t id0 = accountManager->GetNextAvailableId();
+    accountManager->AddAccount(id0, 2000, 2000);
 
-    std::vector<std::size_t> tradingEntities{ 0, 1, 1, 1, 1, 0, 0, 0, 1, 1 };
+    std::size_t id1 = accountManager->GetNextAvailableId();
+    accountManager->AddAccount(id1, 2000, 2000);
+
+    std::vector<std::size_t> tradingEntities{ id0, id1, id1, id1, id1, id0, id0, id0, id1, id1 };
     std::vector<Side> sides{ Side::Buy, Side::Buy, Side::Sell, Side::Sell, Side::Buy, Side::Buy, Side::Sell, Side::Sell, Side::Buy, Side::Sell };
     std::vector<double> quantities{ 20, 14, 17, 30, 35, 14, 34, 12, 25, 16 };
     std::vector<double> prices{ 10, 12, 11.5, 13.2, 11.3, 14.2, 10.6, 10.76, 10.98, 15 };
 
+    m_exchange.AddSeedData(id0, m_stock, 2000);
+    m_exchange.AddSeedData(id1, m_stock, 2000);
+
     for (std::size_t i = 0; i < 10; ++i)
     {
-        m_systemMediator.SendOrderRequest(tradingEntities[i], m_stock, sides[i], quantities[i], prices[i]);
+        m_exchange.SendOrderRequest(tradingEntities[i], m_stock, sides[i], quantities[i], prices[i]);
     }
 
     OrderBook* orderBook = GetOrderBook(m_stock);
@@ -181,23 +204,22 @@ TEST_F(OrderBookTestFixture, OrderBookComplexMatching)
     ASSERT_EQ(orders.find(7), orders.end());
     ASSERT_NE(orders.find(8), orders.end());
     ASSERT_NE(orders.find(9), orders.end());
-
-    for (auto& [id, acc] : accountManager->GetAccounts())
-    {
-        std::cout << acc.GetNetworth() << '\n';
-    }
 }
 
 TEST_F(OrderBookTestFixture, OrderModified)
 {
     AccountManager* accountManager = GetAccountManager();
 
-    accountManager->AddAccount(0, 2000, 2000);
-    accountManager->AddAccount(1, 2000, 2000);
+    std::size_t id0 = accountManager->GetNextAvailableId();
+    accountManager->AddAccount(id0, 2000, 2000);
 
-    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 30, 20);
-    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 20, 18);
-    m_systemMediator.SendOrderRequest(1, m_stock, Side::Buy, 20, 16);
+    std::size_t id1 = accountManager->GetNextAvailableId();
+    accountManager->AddAccount(id1, 2000, 2000);
+
+    m_exchange.AddSeedData(id0, m_stock, 50);
+    m_exchange.SendOrderRequest(0, m_stock, Side::Sell, 30, 20);
+    m_exchange.SendOrderRequest(0, m_stock, Side::Sell, 20, 18);
+    m_exchange.SendOrderRequest(1, m_stock, Side::Buy, 20, 16);
 
     OrderBook* orderBook = GetOrderBook(m_stock);
     ASSERT_NE(orderBook, nullptr);
@@ -221,12 +243,16 @@ TEST_F(OrderBookTestFixture, OrderCancelled)
 {
     AccountManager* accountManager = GetAccountManager();
 
-    accountManager->AddAccount(0, 2000, 2000);
-    accountManager->AddAccount(1, 2000, 2000);
+    std::size_t id0 = accountManager->GetNextAvailableId();
+    accountManager->AddAccount(id0, 2000, 2000);
 
-    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 30, 20);
-    m_systemMediator.SendOrderRequest(0, m_stock, Side::Sell, 20, 18);
-    m_systemMediator.SendOrderRequest(1, m_stock, Side::Buy, 20, 16);
+    std::size_t id1 = accountManager->GetNextAvailableId();
+    accountManager->AddAccount(id1, 2000, 2000);
+
+    m_exchange.AddSeedData(id0, m_stock, 50);
+    m_exchange.SendOrderRequest(0, m_stock, Side::Sell, 30, 20);
+    m_exchange.SendOrderRequest(0, m_stock, Side::Sell, 20, 18);
+    m_exchange.SendOrderRequest(1, m_stock, Side::Buy, 20, 16);
 
     OrderBook* orderBook = GetOrderBook(m_stock);
     ASSERT_NE(orderBook, nullptr);

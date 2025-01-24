@@ -7,14 +7,14 @@
 #include <string>
 #include <unordered_map>
 
-class SystemMediator final
+class Exchange final
 {
 private:
     AccountManager m_accountManager;
     std::unordered_map<std::string, OrderBook> m_orderBooks;
 
 public:
-    SystemMediator();
+    Exchange();
 
     AccountManager* GetAccountManager();
     OrderBook* GetOrderBook(std::string& ticker);
@@ -25,7 +25,9 @@ public:
 
     MarketQuote QueryMarketData(std::string& ticker);
 
-    ~SystemMediator();
+    void AddSeedData(std::size_t id, std::string& ticker, double quantity);
+
+    ~Exchange();
 
 private:
     void RegisterOrderBookCallbacks(OrderBook& orderBook);

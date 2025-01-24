@@ -4,6 +4,14 @@
 
 #include <set>
 
+struct Portfolio
+{
+    double m_cashBalance;
+    double m_assetBalance;
+    double m_reservedBalance;
+    std::unordered_map<std::string, double> m_assets;
+};
+
 class Account final
 {
 private:
@@ -11,24 +19,16 @@ private:
     std::set<std::size_t> m_orderIds;
 
 private:
-    std::unordered_map<std::string, double> m_assets;
-
-    double m_cashBalance;
-    double m_assetBalance;
-    double m_reservedBalance;
+    Portfolio m_portfolio;
 
 public:
     Account(std::size_t id, double initialCashBalance, double initialAssetBalance);
 
     std::size_t GetId() const;
     double GetNetworth() const;
-    double GetCashBalance() const;
-    double GetAssetBalance() const;
-    double GetReservedBalance() const;
+    Portfolio GetPortfolio() const;
 
-    void UpdateCashBalance(double cashBalanceDelta);
-    void UpdateAssetBalance(double assetBalanceDelta);
-    void UpdateReservedCash(double reservedCashDelta);
+    void UpdatePortfolio(double cashBalanceDelta, double assetBalanceDelta, double reservedCashDelta);
     void UpdateAssetQuantities(const std::string& ticker, double quantityDelta);
 
     bool CanPlaceOrder(const std::string& ticker, Side side, double quantity, double price) const;

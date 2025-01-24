@@ -1,4 +1,4 @@
-#include "SystemMediator.hxx"
+#include "Exchange.hxx"
 #include "TradingStrategy.hxx"
 
 #include <iostream>
@@ -116,25 +116,27 @@ static void TimingDiagnostics()
 
     RetrieveData(userIds, stocks, sides, quantities, prices);
 
-    SystemMediator systemMediator;
+    Exchange exchange;
 
-    AccountManager* accountManager = systemMediator.GetAccountManager();
+    AccountManager* accountManager = exchange.GetAccountManager();
 
     std::unordered_map<std::string, std::size_t> idMap;
 
     for (std::size_t id = 0; id < userIds.size(); ++id)
     {
+        std::size_t nextAvailableId = accountManager->GetNextAvailableId();
+
         std::string uId = userIds[id];
         
         if (idMap.find(uId) != idMap.end())
             continue;
         
-        idMap.insert({ uId, id });
-        accountManager->AddAccount(id, 100000, 100000);
+        idMap.insert({ uId, nextAvailableId });
+        accountManager->AddAccount(nextAvailableId, 1000000, 1000000);
     }
 
-    accountManager->AddAccount(userIds.size(), 100000, 100000);
-    TradingStrategySimple simpleStrategy(systemMediator, *accountManager->GetAccount(userIds.size()), "AAPL");
+    accountManager->AddAccount(accountManager->GetNextAvailableId(), 1000000, 1000000);
+    TradingStrategySimple simpleStrategy(exchange, *accountManager->GetAccount(accountManager->GetNextAvailableId()), "AAPL");
 
     std::vector<std::chrono::nanoseconds> latencies;
 
@@ -148,7 +150,7 @@ static void TimingDiagnostics()
     {
         std::size_t id = idMap.at(userIds[i]);
         auto startOp = std::chrono::high_resolution_clock::now();
-        systemMediator.SendOrderRequest(id, stocks[i], sides[i], quantities[i], prices[i]);
+        exchange.SendOrderRequest(id, stocks[i], sides[i], quantities[i], prices[i]);
         auto endOp = std::chrono::high_resolution_clock::now();
 
         latencies.push_back(endOp - startOp);
@@ -218,7 +220,7 @@ static void TimingDiagnostics()
     std::cout << "P95:  " << np95 << "\n";
     std::cout << "P99:  " << np99 << "\n";
     std::cout << "Max:  " << maxNetworth << "\n";
-    std::cout << "Bot: " << accountManager->GetAccount(userIds.size())->GetNetworth() << '\n';
+    std::cout << "Bot: " << accountManager->GetAccount(accountManager->GetNextAvailableId()-1)->GetNetworth() << '\n';
 }
 
 static void LaunchApplication()
@@ -231,9 +233,9 @@ static void LaunchApplication()
     
     RetrieveData(userIds, stocks, sides, quantities, prices);
 
-    SystemMediator systemMediator;
+    Exchange exchange;
 
-    AccountManager* accountManager = systemMediator.GetAccountManager();
+    AccountManager* accountManager = exchange.GetAccountManager();
 
     std::unordered_map<std::string, std::size_t> idMap;
 
@@ -249,7 +251,7 @@ static void LaunchApplication()
     PrintNewLine();
     for (std::size_t i = 0; i < OPERATIONS; ++i)
     {
-        bool success = systemMediator.SendOrderRequest(idMap.at(userIds.at(i)), stocks[i], sides[i], quantities[i], prices[i]);
+        bool success = exchange.SendOrderRequest(idMap.at(userIds.at(i)), stocks[i], sides[i], quantities[i], prices[i]);
 
         if (!success)
             continue;

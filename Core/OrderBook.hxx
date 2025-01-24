@@ -100,7 +100,7 @@ class OrderBook final
     typedef std::function<bool(const Order& order)> AddOrderCallback;
 
 private: // attributes
-    std::size_t m_currOrderId = 0;
+    std::size_t m_nextId = 0;
 
     OrderMatchCallback m_orderMatchCallback;
     AddOrderCallback m_addOrderCallback;

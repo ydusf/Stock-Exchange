@@ -1,16 +1,16 @@
 #pragma once
 
-#include "SystemMediator.hxx"
+#include "Exchange.hxx"
 
 template<typename TStrategy> 
 class TradingStrategy 
 { 
 protected:
-	SystemMediator& m_systemMediator;
+	Exchange& m_exchange;
 	
 public:
-	TradingStrategy(SystemMediator& systemMediator)
-		: m_systemMediator(systemMediator)
+	TradingStrategy(Exchange& exchange)
+		: m_exchange(exchange)
 	{};
 
 	void Run()
@@ -33,7 +33,7 @@ private:
 	std::string m_ticker;
 	
 public:
-	TradingStrategySimple(SystemMediator& systemMediator, Account& account, std::string ticker);
+	TradingStrategySimple(Exchange& exchange, Account& account, std::string ticker);
 
 	void RunImpl();
 

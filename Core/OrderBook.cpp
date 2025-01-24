@@ -28,13 +28,13 @@ std::unordered_map<std::size_t, Order> OrderBook::GetOrders() const
 
 void OrderBook::AddOrder(std::size_t ownerId, std::string ticker, Side side, double quantity, double price)
 {
-    Order order = Order(ticker, side, quantity, price, m_currOrderId, ownerId);
+    Order order = Order(ticker, side, quantity, price, m_nextId, ownerId);
     side == Side::Buy ? m_bids.push(order) : m_asks.push(order);
-    m_orders.insert({ m_currOrderId, order });
+    m_orders.insert({ m_nextId, order });
 
     m_addOrderCallback(order);
 
-    m_currOrderId++;
+    m_nextId++;
     m_quote.m_volume += quantity;
     MatchOrders();
 }

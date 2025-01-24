@@ -1,7 +1,7 @@
 #include "TradingStrategy.hxx"
 
-TradingStrategySimple::TradingStrategySimple(SystemMediator& systemMediator, Account& account, std::string ticker)
-	: TradingStrategy(systemMediator), m_account(account), m_ticker(ticker)
+TradingStrategySimple::TradingStrategySimple(Exchange& exchange, Account& account, std::string ticker)
+	: TradingStrategy(exchange), m_account(account), m_ticker(ticker)
 {};
 
 TradingStrategySimple::~TradingStrategySimple()

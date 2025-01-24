@@ -1,21 +1,21 @@
-#include "SystemMediator.hxx"
+#include "Exchange.hxx"
 
-SystemMediator::SystemMediator()
+Exchange::Exchange()
 {
 
 }
 
-SystemMediator::~SystemMediator()
+Exchange::~Exchange()
 {
 
 }
 
-AccountManager* SystemMediator::GetAccountManager()
+AccountManager* Exchange::GetAccountManager()
 {
     return &m_accountManager;
 }
 
-OrderBook* SystemMediator::GetOrderBook(std::string& ticker)
+OrderBook* Exchange::GetOrderBook(std::string& ticker)
 {
     if (m_orderBooks.find(ticker) != m_orderBooks.end())
     {
@@ -25,11 +25,16 @@ OrderBook* SystemMediator::GetOrderBook(std::string& ticker)
     return nullptr;
 }
 
-bool SystemMediator::SendOrderRequest(std::size_t ownerId, std::string& ticker, Side side, double quantity, double price)
+bool Exchange::SendOrderRequest(std::size_t ownerId, std::string& ticker, Side side, double quantity, double price)
 {
     Account* account = m_accountManager.GetAccount(ownerId);
 
-    if (!account || !(account->CanPlaceOrder(ticker, side, quantity, price)))
+    if (!account)
+        return false;
+
+    bool validOrder = account->CanPlaceOrder(ticker, side, quantity, price);
+
+    if (!validOrder)
         return false;
 
     OrderBook* orderBook = GetOrderBook(ticker);
@@ -52,17 +57,17 @@ bool SystemMediator::SendOrderRequest(std::size_t ownerId, std::string& ticker, 
     return true;
 }
 
-void SystemMediator::SendCancelRequest(std::size_t ownerId, std::size_t orderId)
+void Exchange::SendCancelRequest(std::size_t ownerId, std::size_t orderId)
 {
 
 }
 
-void SystemMediator::SendModifyRequest(std::size_t ownerId, std::size_t orderId, double newQuantity, double newPrice)
+void Exchange::SendModifyRequest(std::size_t ownerId, std::size_t orderId, double newQuantity, double newPrice)
 {
 
 }
 
-MarketQuote SystemMediator::QueryMarketData(std::string& ticker)
+MarketQuote Exchange::QueryMarketData(std::string& ticker)
 {
     OrderBook* orderBook = GetOrderBook(ticker);
 
@@ -72,9 +77,16 @@ MarketQuote SystemMediator::QueryMarketData(std::string& ticker)
     return orderBook->GetMarketQuote();
 }
 
-void SystemMediator::RegisterOrderBookCallbacks(OrderBook& orderBook)
+void Exchange::AddSeedData(std::size_t id, std::string& ticker, double quantity)
 {
-    orderBook.RegisterOrderMatchCallback(
+    Account* account = m_accountManager.GetAccount(id);
+    account->UpdateAssetQuantities(ticker, quantity);
+}
+
+void Exchange::RegisterOrderBookCallbacks(OrderBook& orderBook)
+{
+    orderBook.RegisterOrderMatchCallback
+    (
         [this](const Trade& trade)
         {
             return on_order_match(trade);
@@ -90,7 +102,7 @@ void SystemMediator::RegisterOrderBookCallbacks(OrderBook& orderBook)
     );
 }
 
-bool SystemMediator::on_order_match(const Trade& trade)
+bool Exchange::on_order_match(const Trade& trade)
 {
     const auto& [bid, ask, price, quantity] = trade;
 
@@ -109,12 +121,12 @@ bool SystemMediator::on_order_match(const Trade& trade)
         seller->RemoveOrder(ask);
     }
 
-    m_accountManager.UpdateBalances(trade);
+    m_accountManager.UpdateAccounts(trade);
 
     return true;
 }
 
-bool SystemMediator::on_add_order(const Order& order)
+bool Exchange::on_add_order(const Order& order)
 {
     Account* owner = m_accountManager.GetAccount(order.m_ownerId);
 
@@ -127,7 +139,7 @@ bool SystemMediator::on_add_order(const Order& order)
 
     if (order.m_side == Side::Buy)
     {
-        owner->UpdateReservedCash(tradeValue);
+        owner->UpdatePortfolio(0, 0, tradeValue);
     }
 
     return true;
