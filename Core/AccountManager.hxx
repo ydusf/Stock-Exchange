@@ -21,8 +21,8 @@ public:
     std::unordered_map<std::size_t, Account> GetAccounts() const;
     Account* GetAccount(std::size_t ownerId);
 
-    void AddAccount(std::size_t ownerId, double cashBalance, double assetBalance);
-    void UpdateAccounts(const Trade& trade);
+    void AddAccount(std::size_t ownerId, MarketManager& marketManager, double cashBalance);
+    void UpdateAccounts(const Trade& trade, OrderBook* orderBook);
 
     ~AccountManager();
 

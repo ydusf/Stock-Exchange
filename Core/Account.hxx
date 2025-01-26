@@ -1,8 +1,10 @@
 #pragma once
 
 #include "OrderBook.hxx"
+#include "MarketManager.hxx"
 
 #include <set>
+#include <unordered_map>
 
 struct Portfolio
 {
@@ -18,18 +20,22 @@ private:
     std::size_t m_id;
     std::set<std::size_t> m_orderIds;
 
-private:
+    MarketManager& m_marketManager;
+    
     Portfolio m_portfolio;
 
 public:
-    Account(std::size_t id, double initialCashBalance, double initialAssetBalance);
+    Account(std::size_t id, MarketManager& marketManager, double initialCashBalance);
 
     std::size_t GetId() const;
-    double GetNetworth() const;
-    Portfolio GetPortfolio() const;
+    double GetNetworth();
+    Portfolio GetPortfolio();
 
-    void UpdatePortfolio(double cashBalanceDelta, double assetBalanceDelta, double reservedCashDelta);
-    void UpdateAssetQuantities(const std::string& ticker, double quantityDelta);
+    void Withdraw(double withdrawal);
+    void Insert(double insertion);
+
+    void UpdateBalances(double cashBalanceDelta, double reservedCashDelta);
+    void UpdateAssets(const std::string& ticker, double quantityDelta);
 
     bool CanPlaceOrder(const std::string& ticker, Side side, double quantity, double price) const;
     void AddOrder(const Order& order);
@@ -38,5 +44,6 @@ public:
     ~Account();
 
 private:
+    void UpdateAssetBalance();
 };
 

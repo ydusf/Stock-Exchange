@@ -2,7 +2,7 @@
 
 Exchange::Exchange()
 {
-
+    m_marketManager = MarketManager();
 }
 
 Exchange::~Exchange()
@@ -10,12 +10,17 @@ Exchange::~Exchange()
 
 }
 
+MarketManager* Exchange::GetMarketManager()
+{
+    return &m_marketManager;
+}
+
 AccountManager* Exchange::GetAccountManager()
 {
     return &m_accountManager;
 }
 
-OrderBook* Exchange::GetOrderBook(std::string& ticker)
+OrderBook* Exchange::GetOrderBook(const std::string& ticker)
 {
     if (m_orderBooks.find(ticker) != m_orderBooks.end())
     {
@@ -25,7 +30,7 @@ OrderBook* Exchange::GetOrderBook(std::string& ticker)
     return nullptr;
 }
 
-bool Exchange::SendOrderRequest(std::size_t ownerId, std::string& ticker, Side side, double quantity, double price)
+bool Exchange::SendOrderRequest(std::size_t ownerId, const std::string& ticker, OrderType orderType, Side side, double quantity, double price)
 {
     Account* account = m_accountManager.GetAccount(ownerId);
 
@@ -41,17 +46,17 @@ bool Exchange::SendOrderRequest(std::size_t ownerId, std::string& ticker, Side s
 
     if (!orderBook)
     {
-        auto [it, inserted] = m_orderBooks.try_emplace(ticker);
+        auto [it, inserted] = m_orderBooks.try_emplace(ticker, ticker);
         if (inserted) 
         {
             RegisterOrderBookCallbacks(it->second);
         }
 
-        it->second.AddOrder(ownerId, ticker, side, quantity, price);
+        it->second.AddOrder(ownerId, ticker, orderType, side, quantity, price);
     }
     else
     {
-        orderBook->AddOrder(ownerId, ticker, side, quantity, price);
+        orderBook->AddOrder(ownerId, ticker, orderType, side, quantity, price);
     }
 
     return true;
@@ -67,20 +72,10 @@ void Exchange::SendModifyRequest(std::size_t ownerId, std::size_t orderId, doubl
 
 }
 
-MarketQuote Exchange::QueryMarketData(std::string& ticker)
-{
-    OrderBook* orderBook = GetOrderBook(ticker);
-
-    if (!orderBook)
-        return {};
-
-    return orderBook->GetMarketQuote();
-}
-
-void Exchange::AddSeedData(std::size_t id, std::string& ticker, double quantity)
+void Exchange::AddSeedData(std::size_t id, const std::string& ticker, double quantity)
 {
     Account* account = m_accountManager.GetAccount(id);
-    account->UpdateAssetQuantities(ticker, quantity);
+    account->UpdateAssets(ticker, quantity);
 }
 
 void Exchange::RegisterOrderBookCallbacks(OrderBook& orderBook)
@@ -100,11 +95,19 @@ void Exchange::RegisterOrderBookCallbacks(OrderBook& orderBook)
             return on_add_order(order);
         }
     );
+
+    orderBook.RegisterUpdateMarketQuoteCallback
+    (
+        [this](const std::string& ticker, double topBid, double topAsk)
+        {
+            return on_update_market_quote(ticker, topBid, topAsk);
+        }
+    );
 }
 
 bool Exchange::on_order_match(const Trade& trade)
 {
-    const auto& [bid, ask, price, quantity] = trade;
+    const auto& [ticker, bid, ask, price, quantity] = trade;
 
     Account* buyer = m_accountManager.GetAccount(bid.m_ownerId);
     Account* seller = m_accountManager.GetAccount(ask.m_ownerId);
@@ -121,7 +124,9 @@ bool Exchange::on_order_match(const Trade& trade)
         seller->RemoveOrder(ask);
     }
 
-    m_accountManager.UpdateAccounts(trade);
+    OrderBook* orderBook = GetOrderBook(ticker);
+
+    m_accountManager.UpdateAccounts(trade, orderBook);
 
     return true;
 }
@@ -139,8 +144,13 @@ bool Exchange::on_add_order(const Order& order)
 
     if (order.m_side == Side::Buy)
     {
-        owner->UpdatePortfolio(0, 0, tradeValue);
+        owner->UpdateBalances(0, tradeValue);
     }
 
     return true;
+}
+
+void Exchange::on_update_market_quote(const std::string& ticker, double topBid, double topAsk)
+{
+    m_marketManager.UpdateMarketQuote(ticker, topBid, topAsk);
 }

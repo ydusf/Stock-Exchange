@@ -1,6 +1,6 @@
 #include "OrderBook.hxx"
 
-OrderBook::OrderBook()
+OrderBook::OrderBook(std::string ticker) : m_ticker(ticker)
 {
     
 }
@@ -8,11 +8,6 @@ OrderBook::OrderBook()
 OrderBook::~OrderBook()
 {
 
-}
-
-MarketQuote OrderBook::GetMarketQuote() const
-{
-    return m_quote;
 }
 
 std::optional<Order> OrderBook::GetOrder(std::size_t id) const
@@ -26,16 +21,18 @@ std::unordered_map<std::size_t, Order> OrderBook::GetOrders() const
     return m_orders;
 }
 
-void OrderBook::AddOrder(std::size_t ownerId, std::string ticker, Side side, double quantity, double price)
+void OrderBook::AddOrder(std::size_t ownerId, const std::string& ticker, OrderType orderType, Side side, double quantity, double price)
 {
-    Order order = Order(ticker, side, quantity, price, m_nextId, ownerId);
+    if (ticker != m_ticker)
+        throw std::logic_error("ticker of order and order book must be the same");
+    
+    Order order = Order(ticker, orderType, side, quantity, price, m_nextId, ownerId);
     side == Side::Buy ? m_bids.push(order) : m_asks.push(order);
     m_orders.insert({ m_nextId, order });
 
     m_addOrderCallback(order);
 
     m_nextId++;
-    m_quote.m_volume += quantity;
     MatchOrders();
 }
 
@@ -85,11 +82,9 @@ void OrderBook::RegisterAddOrderCallback(AddOrderCallback addOrderCallback)
     m_addOrderCallback = std::move(addOrderCallback);
 }
 
-void OrderBook::UpdateStockPrice(double bidPrice, double askPrice)
+void OrderBook::RegisterUpdateMarketQuoteCallback(UpdateMarketQuoteCallback updateMarketQuoteCallback)
 {
-    m_quote.m_lastPrice = (m_quote.m_lastPrice * 0.5) + ( (bidPrice * 0.5 + askPrice * 0.5) * 0.5 );
-    m_quote.m_topAsk = m_asks.top().m_price;
-    m_quote.m_topBid = m_bids.top().m_price;
+    m_updateMarketQuoteCallback = std::move(updateMarketQuoteCallback);
 }
 
 void OrderBook::MatchOrders()
@@ -102,7 +97,7 @@ void OrderBook::MatchOrders()
         if (bid.m_price < ask.m_price || bid.m_ownerId == ask.m_ownerId) // illegal match
             return;
 
-        Trade trade(bid, ask, bid.m_price, std::min(bid.m_quantity, ask.m_quantity));
+        Trade trade(m_ticker, bid, ask, bid.m_price, std::min(bid.m_quantity, ask.m_quantity));
 
         if (bid.m_quantity > ask.m_quantity)
         {
@@ -124,8 +119,8 @@ void OrderBook::MatchOrders()
             ask.m_status = Status::Filled;
         }
 
-        m_orderMatchCallback(trade);
-        UpdateStockPrice(bid.m_price, ask.m_price);
+        m_orderMatchCallback(trade);        
+        m_updateMarketQuoteCallback(m_ticker, bid.m_price, ask.m_price);
 
         if (bid.m_status == Status::Filled)
         {

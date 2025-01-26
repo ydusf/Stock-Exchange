@@ -119,6 +119,7 @@ static void TimingDiagnostics()
     Exchange exchange;
 
     AccountManager* accountManager = exchange.GetAccountManager();
+    MarketManager* marketManager = exchange.GetMarketManager();
 
     std::unordered_map<std::string, std::size_t> idMap;
 
@@ -132,15 +133,42 @@ static void TimingDiagnostics()
             continue;
         
         idMap.insert({ uId, nextAvailableId });
-        accountManager->AddAccount(nextAvailableId, 1000000, 1000000);
+        accountManager->AddAccount(nextAvailableId, *marketManager, 10000, 10000);
     }
 
-    accountManager->AddAccount(accountManager->GetNextAvailableId(), 1000000, 1000000);
-    TradingStrategySimple simpleStrategy(exchange, *accountManager->GetAccount(accountManager->GetNextAvailableId()), "AAPL");
+    std::size_t simpleStrategyAccountId = accountManager->GetNextAvailableId();
+
+    accountManager->AddAccount(simpleStrategyAccountId, *marketManager, 10000, 10000);
+    TradingStrategySimple simpleStrategy(exchange, *accountManager->GetAccount(simpleStrategyAccountId), "AAPL");
 
     std::vector<std::chrono::nanoseconds> latencies;
 
     std::size_t OPERATIONS = quantities.size();
+
+    /* Populate users with seed data to get the trading started */
+    std::vector<std::string> tickers = {
+        "AAPL",
+        "META",
+        "TSLA",
+        "NVDA",
+        "MSFT",
+        "AMZN",
+        "GOOGL",
+        "NFLX"
+    };
+
+    for (auto& [idStr, idInt] : idMap)
+    {
+        for (std::string tikr : tickers)
+        {
+            exchange.AddSeedData(idInt, tikr, 500);
+        }
+    }
+
+    for (std::string tikr : tickers)
+    {
+        exchange.AddSeedData(simpleStrategyAccountId, tikr, 500);
+    }
 
     auto startTotal = std::chrono::high_resolution_clock::now();
 
@@ -150,7 +178,7 @@ static void TimingDiagnostics()
     {
         std::size_t id = idMap.at(userIds[i]);
         auto startOp = std::chrono::high_resolution_clock::now();
-        exchange.SendOrderRequest(id, stocks[i], sides[i], quantities[i], prices[i]);
+        exchange.SendOrderRequest(id, stocks[i], OrderType::LimitOrder, sides[i], quantities[i], prices[i]);
         auto endOp = std::chrono::high_resolution_clock::now();
 
         latencies.push_back(endOp - startOp);
@@ -170,6 +198,7 @@ static void TimingDiagnostics()
 
     std::sort(networths.begin(), networths.end());
     
+    auto& minNetworth = networths.front();
     auto& np1 = networths[networths.size() * 0.01];
     auto& np10 = networths[networths.size() * 0.1];
     auto& np25 = networths[networths.size() * 0.25];
@@ -212,14 +241,15 @@ static void TimingDiagnostics()
     PrintNewLine();
     std::cout << "User Financials:\n";
     std::cout << "--------------------\n";
-    std::cout << "P1:  " << np1 << "\n";
-    std::cout << "P10:  " << np10 << "\n";
-    std::cout << "P25:  " << np25 << "\n";
-    std::cout << "P50:  " << np50 << "\n";
-    std::cout << "P90:  " << np90 << "\n";
-    std::cout << "P95:  " << np95 << "\n";
-    std::cout << "P99:  " << np99 << "\n";
-    std::cout << "Max:  " << maxNetworth << "\n";
+    std::cout << "Min:  " << minNetworth - minNetworth << "\n";
+    std::cout << "P1:  " << np1 - minNetworth << "\n";
+    std::cout << "P10:  " << np10 - minNetworth << "\n";
+    std::cout << "P25:  " << np25 - minNetworth << "\n";
+    std::cout << "P50:  " << np50 - minNetworth << "\n";
+    std::cout << "P90:  " << np90 - minNetworth << "\n";
+    std::cout << "P95:  " << np95 - minNetworth << "\n";
+    std::cout << "P99:  " << np99 - minNetworth << "\n";
+    std::cout << "Max:  " << maxNetworth - minNetworth << "\n";
     std::cout << "Bot: " << accountManager->GetAccount(accountManager->GetNextAvailableId()-1)->GetNetworth() << '\n';
 }
 
@@ -236,6 +266,7 @@ static void LaunchApplication()
     Exchange exchange;
 
     AccountManager* accountManager = exchange.GetAccountManager();
+    MarketManager* marketManager = exchange.GetMarketManager();
 
     std::unordered_map<std::string, std::size_t> idMap;
 
@@ -244,14 +275,14 @@ static void LaunchApplication()
     for (std::size_t id = 0; id < userIds.size(); ++id)
     {
         idMap[userIds[id]] = id;
-        accountManager->AddAccount(id, 10000, 10000);
+        accountManager->AddAccount(id, *marketManager, 10000, 10000);
     }
 
     std::cout << "Trading has begun!" << '\n';
     PrintNewLine();
     for (std::size_t i = 0; i < OPERATIONS; ++i)
     {
-        bool success = exchange.SendOrderRequest(idMap.at(userIds.at(i)), stocks[i], sides[i], quantities[i], prices[i]);
+        bool success = exchange.SendOrderRequest(idMap.at(userIds.at(i)), stocks[i], OrderType::LimitOrder, sides[i], quantities[i], prices[i]);
 
         if (!success)
             continue;
