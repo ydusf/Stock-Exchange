@@ -7,12 +7,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core", "Core\Core.vcxproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GoogleTest", "GoogleTest\GoogleTest.vcxproj", "{4B6FE765-4B71-44C8-8AF8-8552861257D0}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UI", "UI\UI.vcxproj", "{E3CC1881-0857-4720-BDE1-C4EB867F7C45}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5340845C-C7B3-4ABC-9742-9F6E51964DDB}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UI", "UI\UI.vcxproj", "{2B9AA63C-CFDC-4A0E-AC09-A851A291FB0F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,14 +38,14 @@ Global
 		{4B6FE765-4B71-44C8-8AF8-8552861257D0}.Release|x64.Build.0 = Release|x64
 		{4B6FE765-4B71-44C8-8AF8-8552861257D0}.Release|x86.ActiveCfg = Release|Win32
 		{4B6FE765-4B71-44C8-8AF8-8552861257D0}.Release|x86.Build.0 = Release|Win32
-		{E3CC1881-0857-4720-BDE1-C4EB867F7C45}.Debug|x64.ActiveCfg = Debug|x64
-		{E3CC1881-0857-4720-BDE1-C4EB867F7C45}.Debug|x64.Build.0 = Debug|x64
-		{E3CC1881-0857-4720-BDE1-C4EB867F7C45}.Debug|x86.ActiveCfg = Debug|Win32
-		{E3CC1881-0857-4720-BDE1-C4EB867F7C45}.Debug|x86.Build.0 = Debug|Win32
-		{E3CC1881-0857-4720-BDE1-C4EB867F7C45}.Release|x64.ActiveCfg = Release|x64
-		{E3CC1881-0857-4720-BDE1-C4EB867F7C45}.Release|x64.Build.0 = Release|x64
-		{E3CC1881-0857-4720-BDE1-C4EB867F7C45}.Release|x86.ActiveCfg = Release|Win32
-		{E3CC1881-0857-4720-BDE1-C4EB867F7C45}.Release|x86.Build.0 = Release|Win32
+		{2B9AA63C-CFDC-4A0E-AC09-A851A291FB0F}.Debug|x64.ActiveCfg = Debug|x64
+		{2B9AA63C-CFDC-4A0E-AC09-A851A291FB0F}.Debug|x64.Build.0 = Debug|x64
+		{2B9AA63C-CFDC-4A0E-AC09-A851A291FB0F}.Debug|x86.ActiveCfg = Debug|Win32
+		{2B9AA63C-CFDC-4A0E-AC09-A851A291FB0F}.Debug|x86.Build.0 = Debug|Win32
+		{2B9AA63C-CFDC-4A0E-AC09-A851A291FB0F}.Release|x64.ActiveCfg = Release|x64
+		{2B9AA63C-CFDC-4A0E-AC09-A851A291FB0F}.Release|x64.Build.0 = Release|x64
+		{2B9AA63C-CFDC-4A0E-AC09-A851A291FB0F}.Release|x86.ActiveCfg = Release|Win32
+		{2B9AA63C-CFDC-4A0E-AC09-A851A291FB0F}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

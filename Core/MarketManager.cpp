@@ -4,10 +4,6 @@ MarketManager::MarketManager()
 {
 }
 
-MarketManager::~MarketManager()
-{
-}
-
 MarketQuote* MarketManager::GetMarketQuote(const std::string& ticker)
 {
     auto itr = m_marketQuotes.find(ticker);

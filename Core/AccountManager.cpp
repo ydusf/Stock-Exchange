@@ -6,11 +6,6 @@ AccountManager::AccountManager()
 
 }
 
-AccountManager::~AccountManager()
-{
-
-}
-
 std::size_t AccountManager::GetNextAvailableId() const
 {
     return m_nextId;

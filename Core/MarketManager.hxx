@@ -25,7 +25,7 @@ public:
 
     void UpdateMarketQuote(const std::string& ticker, double topBid, double topAsk);
 
-	~MarketManager();
+    ~MarketManager() = default;
 
 private:
 

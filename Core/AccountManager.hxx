@@ -24,7 +24,7 @@ public:
     void AddAccount(std::size_t ownerId, MarketManager& marketManager, double cashBalance);
     void UpdateAccounts(const Trade& trade, OrderBook* orderBook);
 
-    ~AccountManager();
+    ~AccountManager() = default;
 
 private:
 
