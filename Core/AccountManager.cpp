@@ -6,12 +6,12 @@ AccountManager::AccountManager()
 
 }
 
-std::size_t AccountManager::GetNextAvailableId() const
+std::size_t AccountManager::GetNextAvailableId()
 {
     return m_nextId;
 }
 
-std::unordered_map<std::size_t, Account> AccountManager::GetAccounts() const
+std::unordered_map<std::size_t, Account> AccountManager::GetAccounts()
 {
     return m_accounts;
 }
@@ -27,7 +27,7 @@ Account* AccountManager::GetAccount(std::size_t id)
 }
 
 void AccountManager::AddAccount(std::size_t id, MarketManager& marketManager, double cashBalance)
-{
+{    
     if (m_accounts.find(id) != m_accounts.end()) // user already added;
         return;
 

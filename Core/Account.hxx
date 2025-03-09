@@ -5,6 +5,7 @@
 
 #include <set>
 #include <unordered_map>
+#include <memory>
 
 struct Portfolio
 {

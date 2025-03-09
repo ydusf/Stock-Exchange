@@ -3,16 +3,22 @@
 #include "OrderBook.hxx"
 #include "AccountManager.hxx"
 #include "MarketManager.hxx"
+#include "ThreadPool.hxx"
 
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <algorithm>
+#include <mutex>
 
 class Exchange final
 {
 private:
-    AccountManager m_accountManager;
-    MarketManager m_marketManager;
+    std::mutex m_lock;
+    ThreadPool m_threadPool{8};
+
+    std::unique_ptr<AccountManager> m_accountManager;
+    std::unique_ptr<MarketManager> m_marketManager;
     std::unordered_map<std::string, OrderBook> m_orderBooks;
 
 public:
@@ -23,8 +29,12 @@ public:
     OrderBook* GetOrderBook(const std::string& ticker);
 
     bool SendOrderRequest(std::size_t ownerId, const std::string& ticker, OrderType orderType, Side Side, double quantity, double price);
-    void SendCancelRequest(std::size_t ownerId, std::size_t orderId);
-    void SendModifyRequest(std::size_t ownerId, std::size_t orderId, double newQuantity, double newPrice);
+    bool SendCancelRequest(std::size_t ownerId, std::size_t orderId);
+    bool SendModifyRequest(std::size_t ownerId, std::size_t orderId, double newQuantity, double newPrice);
+
+    bool ProcessOrderRequest(std::size_t ownerId, const std::string& ticker, OrderType orderType, Side side, double quantity, double price);
+    bool ProcessCancelRequest(std::size_t ownerId, std::size_t orderId);
+    bool ProcessModifyRequest(std::size_t ownerId, std::size_t orderId, double newQuantity, double newPrice);
 
     void AddSeedData(std::size_t id, const std::string& ticker, double quantity);
 

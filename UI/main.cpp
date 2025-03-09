@@ -2,6 +2,10 @@
 
 int main()
 {
-	App app;
-	app.OnInit();
+    App app;
+    app.OnInit();
+
+    int exitCode = app.MainLoop();
+
+    return exitCode;
 }
