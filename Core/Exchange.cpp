@@ -80,22 +80,16 @@ bool Exchange::ProcessModifyRequest(std::size_t ownerId, std::size_t orderId, do
 
 bool Exchange::SendOrderRequest(std::size_t ownerId, const std::string& ticker, OrderType orderType, Side side, double quantity, double price)
 {
-    //std::lock_guard<std::mutex> lock(m_lock);
-    m_threadPool.AddTask(std::bind(&Exchange::ProcessOrderRequest, this, ownerId, ticker, orderType, side, quantity, price));
     return true;
 }
 
 bool Exchange::SendCancelRequest(std::size_t ownerId, std::size_t orderId)
 {
-    //std::lock_guard<std::mutex> lock(m_lock);
-    m_threadPool.AddTask(std::bind(&Exchange::ProcessCancelRequest, this, ownerId, orderId));
     return true;
 }
 
 bool Exchange::SendModifyRequest(std::size_t ownerId, std::size_t orderId, double newQuantity, double newPrice)
 {
-    //std::lock_guard<std::mutex> lock(m_lock);
-    m_threadPool.AddTask(std::bind(&Exchange::ProcessModifyRequest, this, ownerId, orderId, newQuantity, newPrice));
     return true;
 }
 
