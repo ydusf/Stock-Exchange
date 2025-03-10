@@ -3,7 +3,6 @@
 #include "OrderBook.hxx"
 #include "AccountManager.hxx"
 #include "MarketManager.hxx"
-#include "ThreadPool.hxx"
 
 #include <memory>
 #include <string>
@@ -15,7 +14,6 @@ class Exchange final
 {
 private:
     std::mutex m_lock;
-    ThreadPool m_threadPool{8};
 
     std::unique_ptr<AccountManager> m_accountManager;
     std::unique_ptr<MarketManager> m_marketManager;
