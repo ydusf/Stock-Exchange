@@ -81,6 +81,7 @@ bool Exchange::ProcessModifyRequest(std::size_t ownerId, std::size_t orderId, do
 
 bool Exchange::SendOrderRequest(std::size_t ownerId, const std::string& ticker, OrderType orderType, Side side, double quantity, double price)
 {
+    ProcessOrderRequest(ownerId, ticker, orderType, side, quantity, price);
     return true;
 }
 

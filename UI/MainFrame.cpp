@@ -50,16 +50,16 @@ void MainFrame::ObserveStocks()
     assert(marketManager);
 
     std::function<void(MarketQuote quote)> callback = [this](MarketQuote quote)
-        {
-            wxThreadEvent* evt = new wxThreadEvent(MarketUpdateEvt);
-            evt->SetString(
-                "Stock Price: " + std::to_string(quote.m_lastPrice) +
-                "; Top Bid: " + std::to_string(quote.m_topBid) +
-                "; Top Ask: " + std::to_string(quote.m_topAsk) +
-                "; Volume: " + std::to_string(quote.m_volume)
-            );
-            evt->SetPayload(quote);
-            wxQueueEvent(this, evt);
+    {
+        wxThreadEvent* evt = new wxThreadEvent(MarketUpdateEvt);
+        evt->SetString(
+            "Stock Price: " + std::to_string(quote.m_lastPrice) +
+            "; Top Bid: " + std::to_string(quote.m_topBid) +
+            "; Top Ask: " + std::to_string(quote.m_topAsk) +
+            "; Volume: " + std::to_string(quote.m_volume)
+        );
+        evt->SetPayload(quote);
+        wxQueueEvent(this, evt);
         };
     marketManager->AddObserver("NVDA", callback);
 }
@@ -86,68 +86,68 @@ std::vector<std::size_t> MainFrame::AddDummyAccounts(std::size_t numAccounts)
 void MainFrame::BeginSimulation(std::vector<std::size_t>& accounts)
 {
     m_ordersThread = std::thread([this, accounts]()
+    {
+        using namespace std::chrono;
+
+        double midPrice = 110.0;
+        const double riskFreeRate = 0.0001;
+        double volatility = 0.5;
+
+        const double dt = 1.0 / 60.0;
+
+        std::random_device rd;
+        std::mt19937 gen(rd());
+
+        std::normal_distribution<double> volShock(0.0, 0.05);
+        std::lognormal_distribution<double> sizeDistribution(5.0, 0.8);
+        std::normal_distribution<double> priceOffsetDist(0.0, 0.5);
+
+        const double baseDelayMs = 50.0;
+        std::exponential_distribution<double> delayDistribution(1.0 / baseDelayMs);
+        std::uniform_int_distribution<int> sideDistribution(0, 1);
+
+        while (m_running.load())
         {
-            using namespace std::chrono;
-
-            double midPrice = 110.0;
-            const double riskFreeRate = 0.0001;
-            double volatility = 0.5;
-
-            const double dt = 1.0 / 60.0;
-
-            std::random_device rd;
-            std::mt19937 gen(rd());
-
-            std::normal_distribution<double> volShock(0.0, 0.05);
-            std::lognormal_distribution<double> sizeDistribution(5.0, 0.8);
-            std::normal_distribution<double> priceOffsetDist(0.0, 0.5);
-
-            const double baseDelayMs = 50.0;
-            std::exponential_distribution<double> delayDistribution(1.0 / baseDelayMs);
-            std::uniform_int_distribution<int> sideDistribution(0, 1);
-
-            while (m_running.load())
+            volatility += volShock(gen);
+            if (volatility < 0.1)
             {
-                volatility += volShock(gen);
-                if (volatility < 0.1)
-                {
-                    volatility = 0.1;
-                }
-
-                std::normal_distribution<double> norm(0.0, 1.0);
-                double Z = norm(gen);
-                midPrice *= std::exp((riskFreeRate - 0.5 * volatility * volatility) * dt + volatility * std::sqrt(dt) * Z);
-
-                if (midPrice < 1.0)
-                {
-                    midPrice = 1.0;
-                }
-
-                for (const auto& account : accounts)
-                {
-                    Side side = (sideDistribution(gen) == 0 ? Side::Buy : Side::Sell);
-
-                    int size = static_cast<int>(sizeDistribution(gen));
-                    if (size <= 0)
-                    {
-                        size = 1;
-                    }
-
-                    double priceNoise = priceOffsetDist(gen);
-                    int price = static_cast<int>(midPrice + priceNoise);
-                    if (price <= 0)
-                    {
-                        price = 1;
-                    }
-
-                    OrderType orderType = sideDistribution(gen) > 0.5 ? OrderType::LimitOrder : OrderType::MarketOrder;
-                    m_exchange->SendOrderRequest(account, "NVDA", orderType, side, size, price);
-
-                    auto delay = microseconds(static_cast<int>(delayDistribution(gen)));
-                    std::this_thread::sleep_for(delay);
-                }
+                volatility = 0.1;
             }
-        });
+
+            std::normal_distribution<double> norm(0.0, 1.0);
+            double Z = norm(gen);
+            midPrice *= std::exp((riskFreeRate - 0.5 * volatility * volatility) * dt + volatility * std::sqrt(dt) * Z);
+
+            if (midPrice < 1.0)
+            {
+                midPrice = 1.0;
+            }
+
+            for (const auto& account : accounts)
+            {
+                Side side = (sideDistribution(gen) == 0 ? Side::Buy : Side::Sell);
+
+                int size = static_cast<int>(sizeDistribution(gen));
+                if (size <= 0)
+                {
+                    size = 1;
+                }
+
+                double priceNoise = priceOffsetDist(gen);
+                int price = static_cast<int>(midPrice + priceNoise);
+                if (price <= 0)
+                {
+                    price = 1;
+                }
+
+                OrderType orderType = sideDistribution(gen) > 0.5 ? OrderType::LimitOrder : OrderType::MarketOrder;
+                m_exchange->SendOrderRequest(account, "NVDA", orderType, side, size, price);
+
+                auto delay = microseconds(static_cast<int>(delayDistribution(gen)));
+                std::this_thread::sleep_for(delay);
+            }
+        }
+    });
 }
 
 Side MainFrame::ConvertSideStringToSide(wxString sideString)
