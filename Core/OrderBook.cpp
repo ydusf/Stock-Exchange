@@ -2,7 +2,7 @@
 
 OrderBook::OrderBook(std::string ticker) : m_ticker(ticker)
 {
-    
+
 }
 
 OrderBook::~OrderBook()
@@ -10,23 +10,32 @@ OrderBook::~OrderBook()
 
 }
 
-std::optional<Order> OrderBook::GetOrder(std::size_t id) const
+std::optional<Order> OrderBook::GetOrder(std::size_t id)
 {
     auto itr = m_orders.find(id);
     return (itr != m_orders.end()) ? std::optional<Order>{itr->second} : std::nullopt;
 }
 
-std::unordered_map<std::size_t, Order> OrderBook::GetOrders() const
+std::unordered_map<std::size_t, Order> OrderBook::GetOrders()
 {
     return m_orders;
 }
 
-void OrderBook::AddOrder(std::size_t ownerId, const std::string& ticker, OrderType orderType, Side side, double quantity, double price)
+std::size_t OrderBook::GetVolume()
 {
-    if (ticker != m_ticker)
-        throw std::logic_error("ticker of order and order book must be the same");
-    
-    Order order = Order(ticker, orderType, side, quantity, price, m_nextId, ownerId);
+    return m_orders.size();
+}
+
+void OrderBook::AddOrder(std::size_t ownerId, OrderType orderType, Side side, double quantity, double price)
+{
+    std::lock_guard<std::mutex> lock(m_lock);
+
+    if (orderType == OrderType::MarketOrder && !m_asks.empty() && !m_bids.empty())
+    {
+        price = side == Side::Buy ? m_asks.top().m_price : m_bids.top().m_price;
+    }
+
+    Order order = Order(m_ticker, orderType, side, quantity, price, m_nextId, ownerId);
     side == Side::Buy ? m_bids.push(order) : m_asks.push(order);
     m_orders.insert({ m_nextId, order });
 
@@ -38,10 +47,12 @@ void OrderBook::AddOrder(std::size_t ownerId, const std::string& ticker, OrderTy
 
 void OrderBook::ModifyOrder(std::size_t orderId, double newQuantity, double newPrice)
 {
+    std::lock_guard<std::mutex> lock(m_lock);
+
     auto itr = m_orders.find(orderId);
-    if (itr == m_orders.end()) 
+    if (itr == m_orders.end())
         return;
-    
+
     Order& order = itr->second;
 
     if (order.m_status != Status::New && order.m_status != Status::Modified)
@@ -58,6 +69,8 @@ void OrderBook::ModifyOrder(std::size_t orderId, double newQuantity, double newP
 
 void OrderBook::CancelOrder(std::size_t orderId)
 {
+    std::lock_guard<std::mutex> lock(m_lock);
+
     Order& order = m_orders.at(orderId);
 
     if (order.m_status != Status::New && order.m_status != Status::Modified)
@@ -89,6 +102,8 @@ void OrderBook::RegisterUpdateMarketQuoteCallback(UpdateMarketQuoteCallback upda
 
 void OrderBook::MatchOrders()
 {
+    // no need to lock because calling funcs lock
+
     while (!m_bids.empty() && !m_asks.empty())
     {
         Order& bid = m_orders.at(m_bids.top().m_orderId);
@@ -119,7 +134,7 @@ void OrderBook::MatchOrders()
             ask.m_status = Status::Filled;
         }
 
-        m_orderMatchCallback(trade);        
+        m_orderMatchCallback(trade);
         m_updateMarketQuoteCallback(m_ticker, bid.m_price, ask.m_price);
 
         if (bid.m_status == Status::Filled)

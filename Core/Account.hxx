@@ -5,6 +5,7 @@
 
 #include <set>
 #include <unordered_map>
+#include <memory>
 
 struct Portfolio
 {
@@ -21,7 +22,7 @@ private:
     std::set<std::size_t> m_orderIds;
 
     MarketManager& m_marketManager;
-    
+
     Portfolio m_portfolio;
 
 public:

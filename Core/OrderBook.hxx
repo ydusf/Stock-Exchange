@@ -49,13 +49,13 @@ struct Order
 
     Order(std::string ticker, OrderType orderType, Side side, double quantity, double price, std::size_t orderId, std::size_t ownerId)
         : m_ticker(ticker),
-          m_orderType(orderType),
-          m_side(side),
-          m_status(Status::New),
-          m_quantity(quantity),
-          m_price(price),
-          m_orderId(orderId),
-          m_ownerId(ownerId)
+        m_orderType(orderType),
+        m_side(side),
+        m_status(Status::New),
+        m_quantity(quantity),
+        m_price(price),
+        m_orderId(orderId),
+        m_ownerId(ownerId)
     {
         UpdateTime();
     };
@@ -104,6 +104,8 @@ class OrderBook final
     typedef std::function<void(const std::string& ticker, double topBid, double topAsk)> UpdateMarketQuoteCallback;
 
 private: // attributes
+    std::mutex m_lock;
+
     std::size_t m_nextId = 0;
 
     std::string m_ticker;
@@ -118,10 +120,11 @@ private: // attributes
 
 public: // methods
     OrderBook(std::string ticker);
-    std::optional<Order> GetOrder(std::size_t id) const;
-    std::unordered_map<std::size_t, Order> GetOrders() const;
+    std::optional<Order> GetOrder(std::size_t id);
+    std::unordered_map<std::size_t, Order> GetOrders();
+    std::size_t GetVolume();
 
-    void AddOrder(std::size_t ownerId, const std::string& ticker, OrderType orderType, Side side, double quantity, double price);
+    void AddOrder(std::size_t ownerId, OrderType orderType, Side side, double quantity, double price);
     void ModifyOrder(std::size_t orderId, double newQuantity, double newPrice);
     void CancelOrder(std::size_t orderId);
 

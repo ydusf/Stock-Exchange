@@ -6,50 +6,18 @@
 #include <cstdlib>
 #include <ctime>
 
-wxBEGIN_EVENT_TABLE(GraphPanel, wxPanel)
-EVT_PAINT(GraphPanel::OnPaint)
-EVT_SIZE(GraphPanel::OnSize)
-EVT_BUTTON(wxID_ANY, GraphPanel::OnPlaceOrder)
-EVT_MOUSEWHEEL(GraphPanel::OnMouseWheel)
-wxEND_EVENT_TABLE()
-
 GraphPanel::GraphPanel(wxWindow* parent)
     : wxPanel(parent, wxID_ANY)
 {
     SetBackgroundColour(*wxWHITE);
 
-    m_sideCtrl = new wxTextCtrl(this, wxID_ANY, "buy", wxDefaultPosition, wxSize(100, -1));
-    m_priceCtrl = new wxTextCtrl(this, wxID_ANY, "100.0", wxDefaultPosition, wxSize(100, -1));
-    m_quantityCtrl = new wxTextCtrl(this, wxID_ANY, "10", wxDefaultPosition, wxSize(100, -1));
-    m_placeOrderBtn = new wxButton(this, wxID_ANY, "Place Order");
-
-    wxBoxSizer* orderSizer = new wxBoxSizer(wxHORIZONTAL);
-    orderSizer->Add(new wxStaticText(this, wxID_ANY, "Side:"), 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-    orderSizer->Add(m_sideCtrl, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-    orderSizer->Add(new wxStaticText(this, wxID_ANY, "Price:"), 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-    orderSizer->Add(m_priceCtrl, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-    orderSizer->Add(new wxStaticText(this, wxID_ANY, "Quantity:"), 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-    orderSizer->Add(m_quantityCtrl, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-    orderSizer->Add(m_placeOrderBtn, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-
-    wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
-    mainSizer->Add(1, 1, 1, wxEXPAND);
-    mainSizer->Add(orderSizer, 0, wxEXPAND | wxALL, 5);
-
-    SetSizer(mainSizer);
-    Refresh();
-    Layout();
-
-    StartRealTimeUpdate();
+    Bind(wxEVT_PAINT, &GraphPanel::OnPaint, this, wxID_ANY);
+    Bind(wxEVT_SIZE, &GraphPanel::OnSize, this, wxID_ANY);
+    Bind(wxEVT_MOUSEWHEEL, &GraphPanel::OnMouseWheel, this, wxID_ANY);
 }
 
 GraphPanel::~GraphPanel()
 {
-    m_runRealTime = false;
-    if (m_workerThread.joinable())
-    {
-        m_workerThread.join();
-    }
 }
 
 void GraphPanel::OnPaint(wxPaintEvent& event)
@@ -94,6 +62,7 @@ void GraphPanel::DrawGraph(wxDC& dc, int width, int height)
     const int marginRight = 50;
     const int marginTop = 20;
     const int marginBottom = 20;
+    const int constantMargin = 20;
 
     int graphWidth = width - marginLeft - marginRight;
     int graphHeight = height - marginTop - marginBottom;
@@ -208,111 +177,39 @@ void GraphPanel::DrawGraph(wxDC& dc, int width, int height)
     }
 }
 
-void GraphPanel::OnPlaceOrder(wxCommandEvent& event)
+void GraphPanel::UpdateCurrentCandle(double price)
 {
-    wxString sideStr = m_sideCtrl->GetValue();
-    wxString priceStr = m_priceCtrl->GetValue();
-    wxString qtyStr = m_quantityCtrl->GetValue();
+    Candle& candle = m_candles.back();
 
-    if (sideStr.IsEmpty() || priceStr.IsEmpty() || qtyStr.IsEmpty())
+    if (price > candle.high)
     {
-        wxMessageBox("Please fill in Side, Price, and Quantity", "Input Error");
-        return;
+        candle.high = price;
     }
 
-    Side side = ConvertSideStringToSide(sideStr.Lower());
+    if (price < candle.low)
+    {
+        candle.low = price;
+    }
 
-    UpdateCurrentCandle(m_currentCandle, wxAtof(priceStr));
-    UpdateCandles(m_currentCandle, (++m_ordersInCurrentCandle) >= m_ordersPerCandle);
+    candle.close = price;
 }
 
-Side GraphPanel::ConvertSideStringToSide(wxString sideString)
+void GraphPanel::UpdateCandles(double price)
 {
-    if (sideString == "buy")
+    auto currentTime = std::chrono::steady_clock::now();
+    if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - m_currentCandleTime).count() >= 1)
     {
-        return Side::Buy;
+        m_currentCandleTime = currentTime;
+        m_candles.emplace_back(price, price, price, price);
     }
-    else if (sideString == "sell")
-    {
-        return Side::Sell;
-    }
-    else
-    {
-        wxMessageBox("Invalid Side. Enter 'buy' or 'sell'", "Input Error");
-        return Side::Null;
-    }
-}
 
-void GraphPanel::AddCandle(const Candle& candle)
-{
-    m_candles.push_back(candle);
-}
+    UpdateCurrentCandle(price);
 
-void GraphPanel::UpdateCurrentCandle(const Candle& candle, double price)
-{
-    if (m_ordersInCurrentCandle == 0)
-    {
-        m_currentCandle.open = price;
-        m_currentCandle.high = price;
-        m_currentCandle.low = price;
-        m_currentCandle.close = price;
-    }
-    else
-    {
-        if (price > m_currentCandle.high)
-        {
-            m_currentCandle.high = price;
-        }
-
-        if (price < m_currentCandle.low)
-        {
-            m_currentCandle.low = price;
-        }
-
-        m_currentCandle.close = price;
-    }
-}
-
-void GraphPanel::UpdateCandles(const Candle& candle, bool finalize)
-{
-    m_currentCandle = candle;
-    if (finalize)
-    {
-        AddCandle(m_currentCandle);
-        m_ordersInCurrentCandle = 0;
-        Refresh();
-    }
+    Refresh();
 }
 
 void GraphPanel::SetZoomFactor(double zoom)
 {
     m_zoomFactor = zoom;
     Refresh();
-}
-
-void GraphPanel::StartRealTimeUpdate()
-{
-    m_workerThread = std::thread([this]()
-        {
-            using namespace std::chrono;
-            auto interval = milliseconds(50);
-
-            double basePrice = (m_ordersInCurrentCandle > 0) ? m_currentCandle.close : 100.0;
-
-            while (m_runRealTime)
-            {
-                double fluctuation = (((std::rand() % 1001) - 500) / 1000.0) * 0.2;
-                double simulatedPrice = basePrice + fluctuation;
-                basePrice = simulatedPrice;
-
-                CallAfter([this, simulatedPrice]()
-                {
-                    UpdateCurrentCandle(m_currentCandle, simulatedPrice);
-                    bool finalize = (++m_ordersInCurrentCandle) >= m_ordersPerCandle;
-                    UpdateCandles(m_currentCandle, finalize);
-                });
-
-                std::this_thread::sleep_for(interval);
-            }
-        });
 }

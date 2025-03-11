@@ -50,9 +50,9 @@ void Account::UpdateBalances(double cashBalanceDelta, double reservedCashDelta)
 }
 
 void Account::UpdateAssetBalance()
-{    
+{
     auto& [cashBalance, reservedBalance, assetBalance, assets] = m_portfolio;
-    
+
     double newAssetBalance = 0;
 
     for (auto& [ticker, quantity] : assets)
@@ -67,7 +67,7 @@ void Account::UpdateAssetBalance()
 void Account::UpdateAssets(const std::string& ticker, double quantityDelta)
 {
     std::unordered_map<std::string, double>& assets = m_portfolio.m_assets;
-    
+
     auto itr = assets.find(ticker);
     if (itr != assets.end())
     {
@@ -80,7 +80,7 @@ void Account::UpdateAssets(const std::string& ticker, double quantityDelta)
         return;
     }
 
-    assets.insert({ticker, quantityDelta}); // must be a buy order i.e. quantityDelta is +
+    assets.insert({ ticker, quantityDelta }); // must be a buy order i.e. quantityDelta is +
     //assert(quantityDelta >= 0);
 }
 
@@ -89,7 +89,7 @@ bool Account::CanPlaceOrder(const std::string& ticker, Side side, double quantit
     double orderValue = quantity * price;
 
     const auto& [cashBalance, assetBalance, reservedBalance, assets] = m_portfolio;
-    
+
     if (side == Side::Buy)
     {
         return (cashBalance - reservedBalance) >= orderValue;
@@ -97,7 +97,7 @@ bool Account::CanPlaceOrder(const std::string& ticker, Side side, double quantit
     else
     {
         auto itr = assets.find(ticker);
- 
+
         return itr != assets.end() && itr->second >= quantity;
     }
 }
@@ -106,7 +106,7 @@ void Account::AddOrder(const Order& order)
 {
     auto itr = m_orderIds.find(order.m_orderId);
     if (itr == m_orderIds.end())
-    {        
+    {
         m_orderIds.insert(order.m_orderId);
     }
 }

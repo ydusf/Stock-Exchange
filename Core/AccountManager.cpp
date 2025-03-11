@@ -6,12 +6,12 @@ AccountManager::AccountManager()
 
 }
 
-std::size_t AccountManager::GetNextAvailableId() const
+std::size_t AccountManager::GetNextAvailableId()
 {
     return m_nextId;
 }
 
-std::unordered_map<std::size_t, Account> AccountManager::GetAccounts() const
+std::unordered_map<std::size_t, Account> AccountManager::GetAccounts()
 {
     return m_accounts;
 }
@@ -22,7 +22,7 @@ Account* AccountManager::GetAccount(std::size_t id)
     {
         return &m_accounts.at(id);
     }
-    
+
     return nullptr;
 }
 

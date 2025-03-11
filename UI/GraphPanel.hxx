@@ -4,10 +4,7 @@
 
 #include <vector>
 #include <memory>
-#include <thread>
-#include <atomic>
-
-enum class Side { Buy, Sell, Null };
+#include <chrono>
 
 struct Candle
 {
@@ -20,31 +17,18 @@ struct Candle
 class GraphPanel : public wxPanel
 {
 private:
-    int m_ordersInCurrentCandle = 0;
-    const int m_ordersPerCandle = 5;
-    Candle m_currentCandle = Candle();
+    std::chrono::time_point<std::chrono::steady_clock> m_currentCandleTime;
     std::vector<Candle> m_candles;
 
-    wxTextCtrl* m_sideCtrl = nullptr;
-    wxTextCtrl* m_priceCtrl = nullptr;
-    wxTextCtrl* m_quantityCtrl = nullptr;
-    wxButton* m_placeOrderBtn = nullptr;
-
-    int m_width, m_height;
+    int m_width = 800, m_height = 600;
     double m_zoomFactor = 1.0;
-
-    std::atomic<bool> m_runRealTime = { true };
-    std::thread m_workerThread;
 
 public:
     GraphPanel(wxWindow* parent);
 
-    Side ConvertSideStringToSide(wxString sideString);
-    void AddCandle(const Candle& candle);
-    void UpdateCurrentCandle(const Candle& candle, double price);
-    void UpdateCandles(const Candle& candle, bool finalize);
+    void UpdateCurrentCandle(double price);
+    void UpdateCandles(double price);
     void SetZoomFactor(double zoom);
-    void StartRealTimeUpdate();
 
     ~GraphPanel();
 
@@ -53,9 +37,5 @@ private:
     void OnSize(wxSizeEvent& event);
     void OnMouseWheel(wxMouseEvent& event);
 
-    void OnPlaceOrder(wxCommandEvent& event);
-
     void DrawGraph(wxDC& dc, int width, int height);
-
-    wxDECLARE_EVENT_TABLE();
 };
